@@ -33,20 +33,28 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
-      - name: Run unit tests
-        run: ./gradlew test
+      - name: Run project unit tests
+        run: ./gradlew :app:testDebugUnitTest :AihamVirtualTest:testDebugUnitTest
 
-      - name: Build debug APK
+      - name: Build debug APKs
         run: ./gradlew assembleDebug
+
+      - name: Verify generated APKs
+        run: |
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s AihamVirtualTest/build/outputs/apk/debug/AihamVirtualTest-debug.apk
+          ls -lh app/build/outputs/apk/debug/app-debug.apk AihamVirtualTest/build/outputs/apk/debug/AihamVirtualTest-debug.apk
 
       - name: Upload host APK
         uses: actions/upload-artifact@v4
         with:
           name: Aiham-Quotes-debug
-          path: app/build/outputs/apk/debug/*.apk
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
 
       - name: Upload virtual test APK
         uses: actions/upload-artifact@v4
         with:
           name: AihamVirtualTest-debug
-          path: AihamVirtualTest/build/outputs/apk/debug/*.apk
+          path: AihamVirtualTest/build/outputs/apk/debug/AihamVirtualTest-debug.apk
+          if-no-files-found: error
