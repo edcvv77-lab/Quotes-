@@ -22,8 +22,8 @@
     <application
         android:name=".AihamApp"
         android:allowBackup="true"
-        android:icon="@mipmap/ic_launcher"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:icon="@drawable/quotes_launcher_art"
+        android:roundIcon="@drawable/quotes_launcher_art"
         android:label="اقتباسات"
         android:supportsRtl="true"
         android:theme="@style/Theme.MaterialComponents.Light.DarkActionBar"
