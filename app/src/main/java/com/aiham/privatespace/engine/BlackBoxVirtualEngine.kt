@@ -34,8 +34,12 @@ class BlackBoxVirtualEngine : VirtualEngine {
             Log.i(TAG, "Completing BlackBox application lifecycle")
             BlackBoxCore.get().doCreate()
             created = true
-            val packages = BlackBoxCore.get().getInstalledPackages(0, USER_ID)
-            Log.i(TAG, "BlackBox ready; virtual package count=" + packages.size)
+            if (BlackBoxCore.get().isMainProcess) {
+                val packages = BlackBoxCore.get().getInstalledPackages(0, USER_ID)
+                Log.i(TAG, "BlackBox ready in main process; virtual package count=" + packages.size)
+            } else {
+                Log.i(TAG, "BlackBox lifecycle completed in auxiliary process")
+            }
             EngineResult(true, "محرك التطبيقات الافتراضية جاهز.")
         } catch (t: Throwable) {
             created = false
