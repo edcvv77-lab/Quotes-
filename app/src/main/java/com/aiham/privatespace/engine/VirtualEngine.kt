@@ -3,12 +3,20 @@ package com.aiham.privatespace.engine
 import android.content.Context
 import java.io.File
 
+data class EngineResult(
+    val success: Boolean,
+    val message: String,
+    val packageName: String? = null
+)
+
 interface VirtualEngine {
-    fun initialize(context: Context)
-    fun installApk(apkFile: File): Boolean
-    fun uninstallApp(packageName: String): Boolean
-    fun listInstalledApps(): List<String>
-    fun launchApp(packageName: String, context: Context): Boolean
+    fun initialize(context: Context): EngineResult
+    fun onApplicationCreate(): EngineResult
+    fun installApk(apkFile: File): EngineResult
+    fun uninstallApp(packageName: String): EngineResult
+    fun listInstalledApps(): Result<List<String>>
+    fun launchApp(packageName: String, context: Context): EngineResult
     fun isInstalled(packageName: String): Boolean
+    fun isHostPackageInstalled(packageName: String, context: Context): Boolean
     fun getEngineStatus(): String
 }
