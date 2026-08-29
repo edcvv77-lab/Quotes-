@@ -1,21 +1,71 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.aiham.privatespace">
+    xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="29" tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.MANAGE_EXTERNAL_STORAGE" tools:ignore="ScopedStorage" />
+    <uses-permission android:name="android.permission.QUERY_ALL_PACKAGES" tools:ignore="QueryAllPackagesPermission" />
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
-        android:name=".AihamApp"
-        android:allowBackup="true"
+        android:name=".App"
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
-        android:roundIcon="@mipmap/ic_launcher_round"
+        android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
-        android:theme="@style/Theme.AppCompat.Light.DarkActionBar">
-        <activity android:name=".MainActivity">
+        android:theme="@style/Theme.AihamQuotes"
+        android:requestLegacyExternalStorage="true"
+        tools:targetApi="34">
+
+        <activity
+            android:name=".ui.MainActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AihamQuotes">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-    </application>
 
+        <activity
+            android:name=".private_space.PrivateSpaceActivity"
+            android:exported="false"
+            android:label="Aiham Private Space"
+            android:theme="@style/Theme.AihamQuotes" />
+
+        <provider
+            android:name="top.niunaijun.blackbox.core.system.provider.BlackBoxProvider"
+            android:authorities="${applicationId}.blackbox.provider"
+            android:exported="false" />
+
+        <service
+            android:name="top.niunaijun.blackbox.core.system.service.BPService"
+            android:process=":blackbox_daemon" />
+
+        <service
+            android:name="top.niunaijun.blackbox.core.system.service.BFService"
+            android:process=":blackbox_server" />
+
+        <activity
+            android:name="top.niunaijun.blackbox.core.system.proxy.ProxyActivity$P0"
+            android:process=":p0"
+            android:configChanges="mcc|mnc|locale|touchscreen|keyboard|keyboardHidden|navigation|screenLayout|fontScale|uiMode|orientation|screenSize|smallestScreenSize|layoutDirection"
+            android:hardwareAccelerated="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" />
+
+        <service
+            android:name="top.niunaijun.blackbox.core.system.proxy.ProxyService$P0"
+            android:process=":p0" />
+
+        <provider
+            android:name="top.niunaijun.blackbox.core.system.proxy.ProxyContentProvider$P0"
+            android:authorities="${applicationId}.proxy_content_provider_0"
+            android:process=":p0"
+            android:exported="false" />
+    </application>
 </manifest>
