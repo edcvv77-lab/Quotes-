@@ -47,8 +47,8 @@ jobs:
         run: |
           test -n "$(find app/build/test-results/testDebugUnitTest -name 'TEST-*.xml' -print -quit)"
 
-      - name: Build guest and host APKs
-        run: ./gradlew :AihamVirtualTest:assembleDebug :app:assembleDebug --stacktrace
+      - name: Build guest, host, and device-test APKs
+        run: ./gradlew :AihamVirtualTest:assembleDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
 
       - name: Verify embedded guest matches current guest build
         run: |
@@ -62,8 +62,10 @@ jobs:
           mkdir -p dist
           cp app/build/outputs/apk/debug/app-debug.apk dist/Aiham-Quotes-debug.apk
           cp AihamVirtualTest/build/outputs/apk/debug/AihamVirtualTest-debug.apk dist/AihamVirtualTest-debug.apk
+          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk dist/Aiham-Quotes-runtime-tests.apk
           test -s dist/Aiham-Quotes-debug.apk
           test -s dist/AihamVirtualTest-debug.apk
+          test -s dist/Aiham-Quotes-runtime-tests.apk
           sha256sum dist/*.apk
 
       - name: Upload host APK
@@ -78,4 +80,11 @@ jobs:
         with:
           name: AihamVirtualTest-debug
           path: dist/AihamVirtualTest-debug.apk
+          if-no-files-found: error
+
+      - name: Upload Android runtime tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aiham-Quotes-runtime-tests
+          path: dist/Aiham-Quotes-runtime-tests.apk
           if-no-files-found: error
