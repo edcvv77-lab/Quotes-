@@ -1,4 +1,13 @@
 buildscript {
+    ext {
+        compileSdkVersion = 33
+        buildToolsVersion = "30.0.3"
+        minSdkVersion = 21
+        targetSdkVersion = 33
+        versionCode = 1
+        versionName = "1.0.0"
+        kotlin_version = '1.8.20'
+    }
     repositories {
         google()
         mavenCentral()
@@ -6,13 +15,22 @@ buildscript {
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:7.4.2'
-        classpath 'org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.20'
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:1.8.20"
     }
 }
+
 allprojects {
     repositories {
         google()
         mavenCentral()
         maven { url 'https://jitpack.io' }
+    }
+    ext {
+        compileSdkVersion = 33
+        buildToolsVersion = "30.0.3"
+        minSdkVersion = 21
+        targetSdkVersion = 33
+        versionCode = 1
+        versionName = "1.0.0"
     }
 }
