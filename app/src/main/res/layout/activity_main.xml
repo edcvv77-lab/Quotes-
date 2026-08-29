@@ -3,49 +3,45 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="20dp"
+    android:layoutDirection="rtl">
 
     <TextView
-        android:id="@+id/tvEngineStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Engine Status: Unknown"
-        android:textSize="18sp"
+        android:text="اقتباسات"
+        android:textSize="30sp"
         android:textStyle="bold"
-        android:layout_marginBottom="16dp"/>
-
-    <Button
-        android:id="@+id/btnInstallApk"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Install AihamVirtualTest APK" />
-
-    <Button
-        android:id="@+id/btnListApps"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="List Virtual Apps" />
-
-    <Button
-        android:id="@+id/btnLaunchApp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Launch AihamVirtualTest" />
-
-    <Button
-        android:id="@+id/btnUninstallApp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Uninstall AihamVirtualTest" />
+        android:gravity="center"
+        android:layout_marginBottom="8dp" />
 
     <TextView
-        android:id="@+id/tvLogs"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_marginTop="16dp"
-        android:scrollbars="vertical"
-        android:background="#EEEEEE"
-        android:padding="8dp"
-        android:text="Logs:\n" />
+        android:layout_height="wrap_content"
+        android:text="كلمات تستحق أن تُحفظ"
+        android:textSize="15sp"
+        android:gravity="center"
+        android:layout_marginBottom="20dp" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1">
+        <TextView
+            android:id="@+id/tvQuotes"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="19sp"
+            android:lineSpacingExtra="8dp"
+            android:padding="8dp" />
+    </ScrollView>
+
+    <Button
+        android:id="@+id/btnAddQuote"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="إضافة اقتباس"
+        android:textSize="17sp"
+        android:layout_marginTop="16dp" />
 
 </LinearLayout>
