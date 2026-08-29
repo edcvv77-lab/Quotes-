@@ -10,12 +10,17 @@ on:
 jobs:
   build:
     runs-on: ubuntu-22.04
+
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
+
+      - name: Verify pinned BlackBox revision
+        run: |
+          test "$(git -C BlackBox rev-parse HEAD)" = "823ffcbe8b94055ba68767c7422b4d174550fa86"
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
@@ -35,28 +40,42 @@ jobs:
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
-      - name: Run project unit tests
-        run: ./gradlew :app:testDebugUnitTest :AihamVirtualTest:testDebugUnitTest
+      - name: Run real app unit tests
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
 
-      - name: Build debug APKs
-        run: ./gradlew assembleDebug
+      - name: Verify unit test report exists
+        run: |
+          test -n "$(find app/build/test-results/testDebugUnitTest -name 'TEST-*.xml' -print -quit)"
 
-      - name: Verify generated APKs
+      - name: Build guest and host APKs
+        run: ./gradlew :AihamVirtualTest:assembleDebug :app:assembleDebug --stacktrace
+
+      - name: Verify embedded guest matches current guest build
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           test -s AihamVirtualTest/build/outputs/apk/debug/AihamVirtualTest-debug.apk
-          ls -lh app/build/outputs/apk/debug/app-debug.apk AihamVirtualTest/build/outputs/apk/debug/AihamVirtualTest-debug.apk
+          unzip -p app/build/outputs/apk/debug/app-debug.apk assets/AihamVirtualTest-debug.apk > /tmp/embedded-guest.apk
+          cmp /tmp/embedded-guest.apk AihamVirtualTest/build/outputs/apk/debug/AihamVirtualTest-debug.apk
+
+      - name: Prepare deterministic artifact names
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk dist/Aiham-Quotes-debug.apk
+          cp AihamVirtualTest/build/outputs/apk/debug/AihamVirtualTest-debug.apk dist/AihamVirtualTest-debug.apk
+          test -s dist/Aiham-Quotes-debug.apk
+          test -s dist/AihamVirtualTest-debug.apk
+          sha256sum dist/*.apk
 
       - name: Upload host APK
         uses: actions/upload-artifact@v4
         with:
           name: Aiham-Quotes-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          path: dist/Aiham-Quotes-debug.apk
           if-no-files-found: error
 
-      - name: Upload virtual test APK
+      - name: Upload guest test APK
         uses: actions/upload-artifact@v4
         with:
           name: AihamVirtualTest-debug
-          path: AihamVirtualTest/build/outputs/apk/debug/AihamVirtualTest-debug.apk
+          path: dist/AihamVirtualTest-debug.apk
           if-no-files-found: error
