@@ -3,56 +3,27 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="20dp"
-    android:layoutDirection="rtl">
+    android:padding="16dp">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="المساحة الخاصة"
-        android:textSize="28sp"
+        android:text="⚡ التطبيقات المعزولة داخل المحرك"
+        android:textSize="18sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:layout_marginBottom="8dp" />
+        android:paddingBottom="12dp" />
 
-    <TextView
-        android:id="@+id/tvPrivateStatus"
+    <ListView
+        android:id="@+id/listViewPrivateApps"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1"
-        android:text="جارٍ التحقق..."
-        android:textSize="18sp"
-        android:gravity="center"
-        android:padding="16dp" />
+        android:layout_weight="1" />
 
     <Button
-        android:id="@+id/btnInstallApk"
+        android:id="@+id/btnCloneApp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="تثبيت التطبيق التجريبي" />
-
-    <Button
-        android:id="@+id/btnListApps"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="عرض التطبيقات المعزولة" />
-
-    <Button
-        android:id="@+id/btnLaunchApp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="تشغيل التطبيق التجريبي" />
-
-    <Button
-        android:id="@+id/btnUninstallApp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="إلغاء تثبيت التطبيق التجريبي" />
-
-    <Button
-        android:id="@+id/btnBack"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="العودة" />
-
+        android:text="استنساخ تطبيق من الهاتف (واتساب/تليجرام..)"
+        android:textSize="14sp" />
 </LinearLayout>
