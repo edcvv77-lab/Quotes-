@@ -7,13 +7,33 @@ jobs:
   runtime-api30-device:
     name: Android 11 ARM physical runtime
     runs-on: [self-hosted, android, arm64, api30]
-    timeout-minutes: 20
+    timeout-minutes: 30
 
     steps:
-      - name: Checkout repository
+      - name: Checkout repository and pinned BlackBox
         uses: actions/checkout@v4
         with:
-          submodules: false
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Verify pinned BlackBox revision
+        run: |
+          test "$(git -C BlackBox rev-parse HEAD)" = "823ffcbe8b94055ba68767c7422b4d174550fa86"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install required Android SDK packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-33" "build-tools;30.0.3" "ndk;21.0.6113669"
 
       - name: Verify connected Android 11 ARM device
         run: |
@@ -25,13 +45,12 @@ jobs:
             *) echo "Unsupported device ABI"; exit 1 ;;
           esac
 
-      - name: Download latest host artifact from this workflow context
+      - name: Build host and runtime-test APKs
         run: |
-          echo "Install the host and runtime-test APKs on this self-hosted runner before dispatching."
-          test -n "${AIHAM_HOST_APK:-}" || { echo "AIHAM_HOST_APK is required"; exit 1; }
-          test -n "${AIHAM_TEST_APK:-}" || { echo "AIHAM_TEST_APK is required"; exit 1; }
-          test -s "$AIHAM_HOST_APK"
-          test -s "$AIHAM_TEST_APK"
+          chmod +x ./gradlew
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 
       - name: Run BlackBox device acceptance
         run: |
@@ -42,8 +61,8 @@ jobs:
             exit 1
           fi
 
-          adb install -r "$AIHAM_HOST_APK"
-          adb install -r "$AIHAM_TEST_APK"
+          adb install -r app/build/outputs/apk/debug/app-debug.apk
+          adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
           adb logcat -c
 
           adb shell am instrument -w -r com.aiham.quotes.test/androidx.test.runner.AndroidJUnitRunner | tee instrumentation.txt
