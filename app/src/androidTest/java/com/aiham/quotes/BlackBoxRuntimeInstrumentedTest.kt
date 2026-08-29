@@ -54,7 +54,11 @@ class BlackBoxRuntimeInstrumentedTest {
         )
 
         val launch = engine.launchApp(TEST_PACKAGE, context)
-        assertTrue("Virtual launch request failed: " + launch.message, launch.success)
+        assertTrue("Virtual launch failed: " + launch.message, launch.success)
+        assertTrue(
+            "Guest process is not running after launch",
+            engine.isVirtualProcessRunning(TEST_PACKAGE)
+        )
 
         val uninstall = engine.uninstallApp(TEST_PACKAGE)
         assertTrue("Virtual uninstall failed: " + uninstall.message, uninstall.success)
