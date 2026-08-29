@@ -94,21 +94,28 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnBack).setOnClickListener { showQuotesHome() }
     }
 
-    private fun extractTestApk(): File? = try {
-        val file = File(cacheDir, "AihamVirtualTest-debug.apk")
-        if (file.exists() && file.length() > 0) return file
-        assets.open("AihamVirtualTest-debug.apk").use { input ->
-            FileOutputStream(file).use { output -> input.copyTo(output) }
+    private fun extractTestApk(): File? {
+        return try {
+            val file = File(cacheDir, "AihamVirtualTest-debug.apk")
+            if (file.exists() && file.length() > 0) {
+                file
+            } else {
+                assets.open("AihamVirtualTest-debug.apk").use { input ->
+                    FileOutputStream(file).use { output -> input.copyTo(output) }
+                }
+                file.takeIf { it.length() > 0 }
+            }
+        } catch (_: Exception) {
+            null
         }
-        file.takeIf { it.length() > 0 }
-    } catch (_: Exception) { null }
+    }
 
     private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
         .digest(value.toByteArray(Charsets.UTF_8))
         .joinToString("") { "%02x".format(it) }
 
     companion object {
-        // SHA-256("aiham77rk"). This is a trigger, not a cryptographic access-control system.
+        // SHA-256("aiham77rk"). This is a hidden trigger, not strong authentication.
         private const val SECRET_HASH = "1fe4beb5ba37284958745a8f36824d2cc794e7a4eef3d55215cb66d9a7c30a84"
     }
 }
