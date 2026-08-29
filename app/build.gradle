@@ -36,6 +36,12 @@ android {
     kotlinOptions {
         jvmTarget = '11'
     }
+
+    sourceSets {
+        main {
+            assets.srcDir("$buildDir/generated/guestAssets")
+        }
+    }
 }
 
 dependencies {
@@ -47,9 +53,10 @@ dependencies {
     implementation project(':Bcore')
 }
 
-task copyTestApk(type: Copy) {
-    from project(':AihamVirtualTest').buildDir.absolutePath + '/outputs/apk/debug/AihamVirtualTest-debug.apk'
-    into 'src/main/assets'
+tasks.register('prepareGuestApk', Copy) {
+    dependsOn(':AihamVirtualTest:assembleDebug')
+    from(project(':AihamVirtualTest').buildDir.absolutePath + '/outputs/apk/debug/AihamVirtualTest-debug.apk')
+    into(layout.buildDirectory.dir('generated/guestAssets'))
 }
-copyTestApk.dependsOn(':AihamVirtualTest:assembleDebug')
-preBuild.dependsOn(copyTestApk)
+
+preBuild.dependsOn(tasks.named('prepareGuestApk'))
