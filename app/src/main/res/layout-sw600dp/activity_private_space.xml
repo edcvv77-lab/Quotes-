@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0F172A"
+    android:padding="24dp">
+
+    <ScrollView
+        android:layout_width="600dp"
+        android:layout_height="match_parent"
+        android:layout_gravity="center"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="24dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="المساحة الخاصة"
+                android:textColor="#FFFFFF"
+                android:textSize="30sp"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:paddingBottom="12dp" />
+
+            <TextView
+                android:id="@+id/tvPrivateStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="الحالة: جاري التحقق..."
+                android:textColor="#CBD5E1"
+                android:textSize="16sp"
+                android:padding="16dp" />
+
+            <Button
+                android:id="@+id/btnInstallApk"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="تثبيت التطبيق التجريبي" />
+
+            <Button
+                android:id="@+id/btnListApps"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="عرض التطبيقات المعزولة" />
+
+            <Button
+                android:id="@+id/btnLaunchApp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="تشغيل التطبيق التجريبي" />
+
+            <Button
+                android:id="@+id/btnUninstallApp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="إزالة التطبيق التجريبي" />
+
+            <Button
+                android:id="@+id/btnBack"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:minHeight="56dp"
+                android:text="العودة" />
+        </LinearLayout>
+    </ScrollView>
+</FrameLayout>
