@@ -3,6 +3,8 @@ name: Build Aiham Private Space
 on:
   workflow_dispatch:
   push:
+    branches: [main, phase2-runtime-fix]
+  pull_request:
     branches: [main]
 
 jobs:
