@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace 'com.aiham.privatespace'
+    namespace 'com.aiham.quotes'
     compileSdk 33
 
     defaultConfig {
