@@ -10,7 +10,7 @@
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <application
-        android:name=".App"
+        android:name=".AihamApp"
         android:allowBackup="true"
         android:icon="@android:drawable/sym_def_app_icon"
         android:label="اقتباسات"
@@ -27,10 +27,5 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity
-            android:name=".PrivateSpaceActivity"
-            android:exported="false"
-            android:label="Aiham Private Space" />
     </application>
 </manifest>
