@@ -1,8 +1,15 @@
+#!/bin/bash
+set -e
+
+echo "🔧 [1/3] إضافة مستودع jcenter لجلب مكتبة free_reflection..."
+
+cat << 'GRADLE' > build.gradle
 // Top-level build file
 buildscript {
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://jcenter.bintray.com' }
         maven { url 'https://jitpack.io' }
     }
     dependencies {
@@ -15,6 +22,7 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://jcenter.bintray.com' }
         maven { url 'https://jitpack.io' }
     }
 }
@@ -29,3 +37,13 @@ ext {
     xVersion = "1.1.0"
     blackReflection = "1.1.2"
 }
+GRADLE
+
+echo "📤 [2/3] رفع التعديل إلى المستودع..."
+git add build.gradle
+git commit -m "Fix: Add JCenter repository for me.weishu:free_reflection dependency" || true
+git push origin main || git push origin master
+
+echo "⏳ [3/3] جاري مراقبة البناء وبدء تجميع التطبيق..."
+sleep 4
+gh run watch
