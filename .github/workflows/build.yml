@@ -22,6 +22,11 @@ jobs:
         java-version: '11'
         distribution: 'temurin'
 
+    - name: Patch BlackBox Dependencies on Server
+      run: |
+        echo "تحديث روابط المكتبات داخل ملفات BlackBox على السيرفر..."
+        find . -name "build.gradle" -exec sed -i 's|me.weishu:free_reflection.*|com.github.tiann:FreeReflection:3.1.0|g' {} +
+
     - name: Grant Execute Permission
       run: |
         if [ ! -f "gradlew" ]; then

@@ -17,6 +17,15 @@ allprojects {
         mavenCentral()
         maven { url 'https://jitpack.io' }
     }
+    configurations.all {
+        resolutionStrategy {
+            eachDependency { DependencyResolveDetails details ->
+                if (details.requested.group == 'me.weishu' && details.requested.name == 'free_reflection') {
+                    details.useTarget("com.github.tiann:FreeReflection:3.1.0")
+                }
+            }
+        }
+    }
 }
 
 ext {
