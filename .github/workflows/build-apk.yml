@@ -68,6 +68,20 @@ jobs:
           test -s dist/Aiham-Quotes-runtime-tests.apk
           sha256sum dist/*.apk
 
+      - name: Verify final APK metadata and merged BlackBox manifest
+        run: |
+          AAPT="$ANDROID_HOME/build-tools/30.0.3/aapt"
+          "$AAPT" dump badging dist/Aiham-Quotes-debug.apk | tee /tmp/host-badging.txt
+          "$AAPT" dump badging dist/AihamVirtualTest-debug.apk | tee /tmp/guest-badging.txt
+          grep -F "package: name='com.aiham.quotes'" /tmp/host-badging.txt
+          grep -F "sdkVersion:'21'" /tmp/host-badging.txt
+          grep -F "targetSdkVersion:'30'" /tmp/host-badging.txt
+          grep -F "package: name='com.aiham.virtualtest'" /tmp/guest-badging.txt
+          grep -F "targetSdkVersion:'30'" /tmp/guest-badging.txt
+          "$AAPT" dump xmltree dist/Aiham-Quotes-debug.apk AndroidManifest.xml > /tmp/host-manifest.txt
+          grep -F "top.niunaijun.blackbox.app.LauncherActivity" /tmp/host-manifest.txt
+          grep -F "top.niunaijun.blackbox.proxy.ProxyActivity" /tmp/host-manifest.txt
+
       - name: Upload host APK
         uses: actions/upload-artifact@v4
         with:
