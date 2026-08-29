@@ -1,12 +1,18 @@
-include ':app', ':AihamVirtualTest'
-include ':Bcore', ':Bcore:black-fake', ':Bcore:black-hook'
-include ':android-mirror'
-include ':Bcore:pine-core', ':Bcore:pine-xposed', ':Bcore:pine-xposed-res'
+pluginManagement {
+    repositories {
+        google()
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
 
-project(':Bcore').projectDir = new File('BlackBox/Bcore')
-project(':Bcore:black-fake').projectDir = new File('BlackBox/Bcore/black-fake')
-project(':Bcore:black-hook').projectDir = new File('BlackBox/Bcore/black-hook')
-project(':android-mirror').projectDir = new File('BlackBox/android-mirror')
-project(':Bcore:pine-core').projectDir = new File('BlackBox/Bcore/pine-core')
-project(':Bcore:pine-xposed').projectDir = new File('BlackBox/Bcore/pine-xposed')
-project(':Bcore:pine-xposed-res').projectDir = new File('BlackBox/Bcore/pine-xposed-res')
+dependencyResolutionManagement {
+    repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
+    repositories {
+        google()
+        mavenCentral()
+    }
+}
+
+rootProject.name = 'Quotes'
+include ':app'
