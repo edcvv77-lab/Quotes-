@@ -2,6 +2,7 @@ package com.aiham.quotes
 
 import android.app.AlertDialog
 import android.os.Bundle
+import android.util.Log
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
@@ -10,12 +11,12 @@ import androidx.appcompat.app.AppCompatActivity
 import com.aiham.privatespace.engine.BlackBoxVirtualEngine
 import java.io.File
 import java.io.FileOutputStream
-import java.security.MessageDigest
 
 class MainActivity : AppCompatActivity() {
     private lateinit var tvQuotes: TextView
     private lateinit var tvPrivateStatus: TextView
     private val prefs by lazy { getSharedPreferences("quotes", MODE_PRIVATE) }
+    private val quoteService by lazy { QuoteService(SharedPreferencesQuoteStore(prefs)) }
     private val virtualEngine: BlackBoxVirtualEngine by lazy { (application as AihamApp).virtualEngine }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -45,19 +46,14 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun handleSubmittedText(raw: String) {
-        val text = raw.trim()
-        if (text.isEmpty()) return
-
-        if (sha256(text) == SECRET_HASH) {
-            enterPrivateSpace()
-            return
+        when (val result = quoteService.submit(raw)) {
+            QuoteSubmission.Empty -> Unit
+            QuoteSubmission.OpenPrivateSpace -> enterPrivateSpace()
+            is QuoteSubmission.Saved -> {
+                renderQuotes()
+                Toast.makeText(this, "تمت إضافة الاقتباس", Toast.LENGTH_SHORT).show()
+            }
         }
-
-        val items = prefs.getStringSet("items", emptySet())!!.toMutableSet()
-        items.add(text)
-        prefs.edit().putStringSet("items", items).apply()
-        renderQuotes()
-        Toast.makeText(this, "تمت إضافة الاقتباس", Toast.LENGTH_SHORT).show()
     }
 
     private fun renderQuotes() {
@@ -66,56 +62,94 @@ class MainActivity : AppCompatActivity() {
             "لا تنتظر الوقت المثالي؛ اصنعه.",
             "كل خطوة واضحة أفضل من عشر خطوات متخيلة."
         )
-        val custom = prefs.getStringSet("items", emptySet())!!.toList()
-        tvQuotes.text = (defaults + custom).joinToString("\n\n") { "“$it”" }
+        tvQuotes.text = (defaults + quoteService.getQuotes()).joinToString("\n\n") { "“$it”" }
     }
 
     private fun enterPrivateSpace() {
         setContentView(R.layout.activity_private_space)
         tvPrivateStatus = findViewById(R.id.tvPrivateStatus)
-        tvPrivateStatus.text = "الحالة: ${virtualEngine.getEngineStatus()}"
+        refreshPrivateStatus()
 
         findViewById<Button>(R.id.btnInstallApk).setOnClickListener {
-            val apk = extractTestApk()
-            val ok = apk != null && virtualEngine.installApk(apk)
-            tvPrivateStatus.text = if (ok) "تم تثبيت التطبيق داخل المساحة" else "فشل التثبيت"
+            runPrivateAction("جاري فحص وتثبيت التطبيق...") {
+                val apk = extractTestApk()
+                    ?: return@runPrivateAction "تعذر تجهيز ملف التطبيق التجريبي."
+                val result = virtualEngine.installApk(apk)
+                if (result.success) {
+                    val pkg = result.packageName ?: TEST_PACKAGE
+                    val hostVisible = virtualEngine.isHostPackageInstalled(pkg, this)
+                    Log.i(GUEST_TAG, "Post-install host PackageManager visibility package=$pkg visible=$hostVisible")
+                    result.message + if (hostVisible) "\nتحذير: الحزمة ظاهرة لمدير حزم النظام." else "\nالحزمة غير مثبتة كحزمة نظام مستقلة."
+                } else result.message
+            }
         }
+
         findViewById<Button>(R.id.btnListApps).setOnClickListener {
-            val apps = virtualEngine.listInstalledApps()
-            tvPrivateStatus.text = if (apps.isEmpty()) "لا توجد تطبيقات افتراضية مثبتة" else apps.joinToString("\n")
+            runPrivateAction("جاري تحديث القائمة...") {
+                virtualEngine.listInstalledApps().fold(
+                    onSuccess = { apps -> if (apps.isEmpty()) "لا توجد تطبيقات افتراضية مثبتة." else apps.joinToString("\n") },
+                    onFailure = { "تعذر قراءة قائمة التطبيقات الافتراضية." }
+                )
+            }
         }
+
         findViewById<Button>(R.id.btnLaunchApp).setOnClickListener {
-            val ok = virtualEngine.launchApp("com.aiham.virtualtest", this)
-            tvPrivateStatus.text = if (ok) "تم تشغيل التطبيق داخل المساحة" else "تعذر تشغيل التطبيق"
+            runPrivateAction("جاري طلب تشغيل التطبيق...") {
+                virtualEngine.launchApp(TEST_PACKAGE, this).message
+            }
         }
+
         findViewById<Button>(R.id.btnUninstallApp).setOnClickListener {
-            val ok = virtualEngine.uninstallApp("com.aiham.virtualtest")
-            tvPrivateStatus.text = if (ok) "تم إلغاء تثبيت التطبيق الافتراضي" else "فشل إلغاء التثبيت"
+            runPrivateAction("جاري إزالة التطبيق...") {
+                virtualEngine.uninstallApp(TEST_PACKAGE).message
+            }
         }
+
         findViewById<Button>(R.id.btnBack).setOnClickListener { showQuotesHome() }
+    }
+
+    private fun refreshPrivateStatus() {
+        tvPrivateStatus.text = "حالة المحرك: ${virtualEngine.getEngineStatus()}"
+    }
+
+    private fun runPrivateAction(progressText: String, action: () -> String) {
+        tvPrivateStatus.text = progressText
+        Thread {
+            val message = try {
+                action()
+            } catch (t: Throwable) {
+                Log.e(SPACE_TAG, "Private-space action failed", t)
+                "تعذر إكمال العملية."
+            }
+            runOnUiThread {
+                tvPrivateStatus.text = message
+            }
+        }.start()
     }
 
     private fun extractTestApk(): File? {
         return try {
-            val file = File(cacheDir, "AihamVirtualTest-debug.apk")
-            if (file.exists() && file.length() > 0) {
-                file
-            } else {
-                assets.open("AihamVirtualTest-debug.apk").use { input ->
-                    FileOutputStream(file).use { output -> input.copyTo(output) }
-                }
-                file.takeIf { it.length() > 0 }
+            val file = File(cacheDir, TEST_APK_NAME)
+            assets.open(TEST_APK_NAME).use { input ->
+                FileOutputStream(file, false).use { output -> input.copyTo(output) }
             }
-        } catch (_: Exception) {
+            if (file.length() <= 0L) {
+                Log.e(GUEST_TAG, "Extracted guest APK is empty")
+                null
+            } else {
+                Log.i(GUEST_TAG, "Guest APK extracted path=${file.absolutePath} bytes=${file.length()}")
+                file
+            }
+        } catch (t: Throwable) {
+            Log.e(GUEST_TAG, "Guest APK extraction failed", t)
             null
         }
     }
 
-    private fun sha256(value: String): String = MessageDigest.getInstance("SHA-256")
-        .digest(value.toByteArray(Charsets.UTF_8))
-        .joinToString("") { "%02x".format(it) }
-
-    companion object {
-        private const val SECRET_HASH = "1fe4beb5ba37284958745a8f36824d2cc794e7a4eef3d55215cb66d9a7c30a84"
+    private companion object {
+        const val SPACE_TAG = "AIHAM_SPACE"
+        const val GUEST_TAG = "AIHAM_GUEST"
+        const val TEST_PACKAGE = "com.aiham.virtualtest"
+        const val TEST_APK_NAME = "AihamVirtualTest-debug.apk"
     }
 }
