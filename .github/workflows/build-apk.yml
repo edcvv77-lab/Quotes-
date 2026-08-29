@@ -142,7 +142,7 @@ jobs:
       - name: Verify ARM runner and APK inputs
         run: |
           uname -a
-          test "$(uname -m)" = "arm64"
+          case "$(uname -m)" in arm64|aarch64) ;; *) exit 1 ;; esac
           test -s runtime/host/Aiham-Quotes-debug.apk
           test -s runtime/tests/Aiham-Quotes-runtime-tests.apk
 
