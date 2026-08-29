@@ -24,8 +24,7 @@ jobs:
 
     - name: Patch BlackBox Dependencies on Server
       run: |
-        echo "تحديث روابط المكتبات داخل ملفات BlackBox على السيرفر..."
-        find . -name "build.gradle" -exec sed -i 's|me.weishu:free_reflection.*|com.github.tiann:FreeReflection:3.1.0|g' {} +
+        find . -name "build.gradle" -exec sed -i 's|me.weishu:free_reflection:3.0.1|com.github.tiann:FreeReflection:3.1.0|g' {} +
 
     - name: Grant Execute Permission
       run: |
