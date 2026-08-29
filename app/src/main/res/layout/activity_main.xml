@@ -3,27 +3,44 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="20dp"
+    android:background="#F7F7F7">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="📜 روائع الاقتباسات اليومية"
-        android:textSize="20sp"
+        android:text="اقتباسات"
+        android:textSize="28sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:paddingBottom="12dp" />
+        android:textColor="#222222"
+        android:paddingBottom="8dp" />
 
-    <ListView
-        android:id="@+id/listViewQuotes"
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="كلمات تستحق أن تبقى"
+        android:textSize="14sp"
+        android:gravity="center"
+        android:textColor="#666666"
+        android:paddingBottom="18dp" />
+
+    <TextView
+        android:id="@+id/tvQuotes"
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1" />
+        android:layout_weight="1"
+        android:textSize="17sp"
+        android:textColor="#222222"
+        android:gravity="top|start"
+        android:lineSpacingExtra="6dp"
+        android:padding="8dp"
+        android:text="" />
 
     <Button
         android:id="@+id/btnAddQuote"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="＋ إضافة اقتباس جديد"
+        android:text="إضافة اقتباس"
         android:textSize="16sp" />
 </LinearLayout>
