@@ -97,6 +97,25 @@ Additional physical-device test artifact:
 
 This test has been built by CI, but it has NOT been executed on a physical Android 11 device in the current remote environment.
 
+## Hosted CI Android 11 ARM limitation
+
+Three hosted-runner approaches were evaluated after the initial report:
+
+1. GitHub macOS ARM64 + Android 11 ARM emulator:
+   - Android Emulator started, then exited with `HVF error: HV_UNSUPPORTED`.
+   - GitHub macOS ARM runners do not provide the nested virtualization required by the Android Emulator.
+
+2. GitHub macOS ARM64 + `aosp_atd` + `-no-accel`:
+   - The current emulator still attempted HVF and exited with the same `HV_UNSUPPORTED` error.
+
+3. GitHub Linux ARM64 (`ubuntu-24.04-arm`):
+   - The runner itself is real `aarch64`.
+   - The Android Emulator host package is not published/available for this Linux ARM64 environment (`Failed to find package 'emulator'`).
+
+Therefore hosted GitHub Actions cannot currently execute the required Android 11 ARM BlackBox runtime test for this project without changing the tested ABI/framework. The build CI remains limited to tests it can prove reliably.
+
+A separate manual workflow, `.github/workflows/android11-device-runtime.yml`, is provided for a self-hosted runner connected to a real Android 11 ARM device. It performs checkout, build, installation, instrumentation, host PackageManager verification, and log capture.
+
 ## Physical Android 11 status
 
 Status: NOT YET EXECUTED.
