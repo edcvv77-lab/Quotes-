@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout Repository
+    - name: Checkout Repository with Submodules
       uses: actions/checkout@v4
       with:
         submodules: recursive
@@ -21,7 +21,6 @@ jobs:
       with:
         java-version: '17'
         distribution: 'temurin'
-        cache: 'gradle'
 
     - name: Grant Execute Permission for Gradlew
       run: |
@@ -32,8 +31,7 @@ jobs:
 
     - name: Build App APK
       env:
-        JAVA_OPTS: "-Xmx2048m --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
-        GRADLE_OPTS: "-Dorg.gradle.jvmargs='-Xmx2048m --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED'"
+        JAVA_TOOL_OPTIONS: "--add-opens=java.base/java.util=ALL-UNNAMED --add-opens=java.base/java.lang=ALL-UNNAMED --add-opens=java.base/java.io=ALL-UNNAMED --add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
       run: ./gradlew :app:assembleDebug --stacktrace
 
     - name: Upload APK Artifact
