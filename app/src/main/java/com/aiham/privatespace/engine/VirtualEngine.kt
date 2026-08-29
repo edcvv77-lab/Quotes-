@@ -17,6 +17,7 @@ interface VirtualEngine {
     fun listInstalledApps(): Result<List<String>>
     fun launchApp(packageName: String, context: Context): EngineResult
     fun isInstalled(packageName: String): Boolean
+    fun isVirtualProcessRunning(packageName: String): Boolean
     fun isHostPackageInstalled(packageName: String, context: Context): Boolean
     fun getEngineStatus(): String
 }
