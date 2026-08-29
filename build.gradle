@@ -3,6 +3,7 @@ buildscript {
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://jcenter.bintray.com' }
         maven { url 'https://jitpack.io' }
     }
     dependencies {
@@ -15,11 +16,11 @@ allprojects {
     repositories {
         google()
         mavenCentral()
+        maven { url 'https://jcenter.bintray.com' }
         maven { url 'https://jitpack.io' }
     }
 }
 
-// المتغيرات العامة المطلوبة لمحرك Bcore
 ext {
     compileSdkVersion = 33
     buildToolsVersion = "30.0.3"
