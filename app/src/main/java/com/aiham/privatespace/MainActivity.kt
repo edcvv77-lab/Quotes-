@@ -1,6 +1,7 @@
 package com.aiham.quotes
 
 import android.app.AlertDialog
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.util.Log
 import android.widget.Button
@@ -9,6 +10,7 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.aiham.privatespace.engine.BlackBoxVirtualEngine
+import com.aiham.privatespace.permissions.GuestPermissionManager
 import java.io.File
 import java.io.FileOutputStream
 
@@ -18,6 +20,9 @@ class MainActivity : AppCompatActivity() {
     private val prefs by lazy { getSharedPreferences("quotes", MODE_PRIVATE) }
     private val quoteService by lazy { QuoteService(SharedPreferencesQuoteStore(prefs)) }
     private val virtualEngine: BlackBoxVirtualEngine by lazy { (application as AihamApp).virtualEngine }
+    private val guestPermissionManager by lazy { GuestPermissionManager(this) }
+
+    private var pendingGuestApk: File? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -62,7 +67,7 @@ class MainActivity : AppCompatActivity() {
             "لا تنتظر الوقت المثالي؛ اصنعه.",
             "كل خطوة واضحة أفضل من عشر خطوات متخيلة."
         )
-        tvQuotes.text = (defaults + quoteService.getQuotes()).joinToString("\n\n") { "“$it”" }
+        tvQuotes.text = (defaults + quoteService.getQuotes()).joinToString("\n\n") { "“" + it + "”" }
     }
 
     private fun enterPrivateSpace() {
@@ -71,23 +76,16 @@ class MainActivity : AppCompatActivity() {
         refreshPrivateStatus()
 
         findViewById<Button>(R.id.btnInstallApk).setOnClickListener {
-            runPrivateAction("جاري فحص وتثبيت التطبيق...") {
-                val apk = extractTestApk()
-                    ?: return@runPrivateAction "تعذر تجهيز ملف التطبيق التجريبي."
-                val result = virtualEngine.installApk(apk)
-                if (result.success) {
-                    val pkg = result.packageName ?: TEST_PACKAGE
-                    val hostVisible = virtualEngine.isHostPackageInstalled(pkg, this)
-                    Log.i(GUEST_TAG, "Post-install host PackageManager visibility package=$pkg visible=$hostVisible")
-                    result.message + if (hostVisible) "\nتحذير: الحزمة ظاهرة لمدير حزم النظام." else "\nالحزمة غير مثبتة كحزمة نظام مستقلة."
-                } else result.message
-            }
+            prepareGuestInstall()
         }
 
         findViewById<Button>(R.id.btnListApps).setOnClickListener {
             runPrivateAction("جاري تحديث القائمة...") {
                 virtualEngine.listInstalledApps().fold(
-                    onSuccess = { apps -> if (apps.isEmpty()) "لا توجد تطبيقات افتراضية مثبتة." else apps.joinToString("\n") },
+                    onSuccess = { apps ->
+                        if (apps.isEmpty()) "لا توجد تطبيقات افتراضية مثبتة."
+                        else apps.joinToString("\n")
+                    },
                     onFailure = { "تعذر قراءة قائمة التطبيقات الافتراضية." }
                 )
             }
@@ -108,8 +106,102 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnBack).setOnClickListener { showQuotesHome() }
     }
 
+    private fun prepareGuestInstall() {
+        tvPrivateStatus.text = "جاري فحص التطبيق والأذونات..."
+
+        Thread {
+            val apk = extractTestApk()
+            if (apk == null) {
+                runOnUiThread {
+                    tvPrivateStatus.text = "تعذر تجهيز ملف التطبيق التجريبي."
+                }
+                return@Thread
+            }
+
+            val plan = guestPermissionManager.buildPlan(apk).getOrElse { error ->
+                Log.e(SPACE_TAG, "Unable to build guest permission plan", error)
+                runOnUiThread {
+                    tvPrivateStatus.text = "تعذر فحص أذونات التطبيق."
+                }
+                return@Thread
+            }
+
+            runOnUiThread {
+                if (plan.missingRuntimePermissions.isEmpty()) {
+                    installGuest(apk, permissionsDenied = false)
+                } else {
+                    pendingGuestApk = apk
+                    tvPrivateStatus.text = "يحتاج التطبيق إلى أذونات لاستخدام بعض الوظائف."
+                    guestPermissionManager.requestMissingRuntimePermissions(
+                        plan,
+                        REQUEST_GUEST_PERMISSIONS
+                    )
+                }
+            }
+        }.start()
+    }
+
+    override fun onRequestPermissionsResult(
+        requestCode: Int,
+        permissions: Array<out String>,
+        grantResults: IntArray
+    ) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+
+        if (requestCode != REQUEST_GUEST_PERMISSIONS) return
+
+        val apk = pendingGuestApk
+        pendingGuestApk = null
+
+        if (apk == null) {
+            Log.w(SPACE_TAG, "Permission result received without pending guest APK")
+            return
+        }
+
+        val denied = permissions.indices.any { index ->
+            grantResults.getOrNull(index) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (denied) {
+            Log.w(SPACE_TAG, "One or more guest runtime permissions were denied")
+        }
+
+        installGuest(apk, permissionsDenied = denied)
+    }
+
+    private fun installGuest(apk: File, permissionsDenied: Boolean) {
+        runPrivateAction("جاري تثبيت التطبيق داخل المساحة...") {
+            val result = virtualEngine.installApk(apk)
+            if (result.success) {
+                val pkg = result.packageName ?: TEST_PACKAGE
+                val hostVisible = virtualEngine.isHostPackageInstalled(pkg, this)
+                Log.i(
+                    GUEST_TAG,
+                    "Post-install host PackageManager visibility package=" + pkg +
+                        " visible=" + hostVisible
+                )
+
+                buildString {
+                    append(result.message)
+                    if (permissionsDenied) {
+                        append("\nتم رفض بعض الأذونات؛ قد لا تعمل بعض وظائف التطبيق.")
+                    }
+                    append(
+                        if (hostVisible) {
+                            "\nتحذير: الحزمة ظاهرة لمدير حزم النظام."
+                        } else {
+                            "\nالحزمة غير مثبتة كحزمة نظام مستقلة."
+                        }
+                    )
+                }
+            } else {
+                result.message
+            }
+        }
+    }
+
     private fun refreshPrivateStatus() {
-        tvPrivateStatus.text = "حالة المحرك: ${virtualEngine.getEngineStatus()}"
+        tvPrivateStatus.text = "حالة المحرك: " + virtualEngine.getEngineStatus()
     }
 
     private fun runPrivateAction(progressText: String, action: () -> String) {
@@ -137,7 +229,10 @@ class MainActivity : AppCompatActivity() {
                 Log.e(GUEST_TAG, "Extracted guest APK is empty")
                 null
             } else {
-                Log.i(GUEST_TAG, "Guest APK extracted path=${file.absolutePath} bytes=${file.length()}")
+                Log.i(
+                    GUEST_TAG,
+                    "Guest APK extracted path=" + file.absolutePath + " bytes=" + file.length()
+                )
                 file
             }
         } catch (t: Throwable) {
@@ -151,5 +246,6 @@ class MainActivity : AppCompatActivity() {
         const val GUEST_TAG = "AIHAM_GUEST"
         const val TEST_PACKAGE = "com.aiham.virtualtest"
         const val TEST_APK_NAME = "AihamVirtualTest-debug.apk"
+        const val REQUEST_GUEST_PERMISSIONS = 7701
     }
 }
