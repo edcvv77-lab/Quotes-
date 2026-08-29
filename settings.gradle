@@ -1,2 +1,4 @@
 rootProject.name = "Quotes"
 include ':app'
+include ':Bcore'
+project(':Bcore').projectDir = new File(rootDir, 'BlackBox/Bcore')
