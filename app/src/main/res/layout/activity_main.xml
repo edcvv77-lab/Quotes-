@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/tvEngineStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Engine Status: Unknown"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnInstallApk"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Install AihamVirtualTest APK" />
+
+    <Button
+        android:id="@+id/btnListApps"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="List Virtual Apps" />
+
+    <Button
+        android:id="@+id/btnLaunchApp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Launch AihamVirtualTest" />
+
+    <Button
+        android:id="@+id/btnUninstallApp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Uninstall AihamVirtualTest" />
+
+    <TextView
+        android:id="@+id/tvLogs"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="16dp"
+        android:scrollbars="vertical"
+        android:background="#EEEEEE"
+        android:padding="8dp"
+        android:text="Logs:\n" />
+
+</LinearLayout>
