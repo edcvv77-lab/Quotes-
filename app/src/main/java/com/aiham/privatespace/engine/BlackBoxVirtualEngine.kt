@@ -1,7 +1,9 @@
 package com.aiham.privatespace.engine
 
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
 import java.io.File
 import top.niunaijun.blackbox.BlackBoxCore
@@ -104,15 +106,53 @@ class BlackBoxVirtualEngine : VirtualEngine {
 
     override fun launchApp(packageName: String, context: Context): EngineResult {
         if (!isReady()) return EngineResult(false, "محرك التطبيقات الافتراضية غير جاهز.", packageName)
+
         return try {
-            if (!BlackBoxCore.get().isInstalled(packageName, USER_ID))
+            if (!BlackBoxCore.get().isInstalled(packageName, USER_ID)) {
                 return EngineResult(false, "التطبيق غير مثبت داخل المساحة.", packageName)
-            val launchIntent = BlackBoxCore.getBPackageManager().getLaunchIntentForPackage(packageName, USER_ID)
+            }
+
+            val resolvedIntent = BlackBoxCore.getBPackageManager()
+                .getLaunchIntentForPackage(packageName, USER_ID)
                 ?: return EngineResult(false, "لا توجد شاشة تشغيل للتطبيق.", packageName)
-            Log.i(GUEST_TAG, "Launching virtual package=" + packageName + " component=" + launchIntent.component)
-            val requested = BlackBoxCore.get().launchApk(packageName, USER_ID)
-            if (requested) EngineResult(true, "تم إرسال طلب تشغيل التطبيق.", packageName)
-            else EngineResult(false, "تعذر تشغيل التطبيق الافتراضي.", packageName)
+
+            val launchIntent = Intent(resolvedIntent).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            }
+
+            Log.i(
+                GUEST_TAG,
+                "Launching virtual package=" + packageName +
+                    " component=" + launchIntent.component +
+                    " sdk=" + Build.VERSION.SDK_INT
+            )
+
+            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
+                Log.i(GUEST_TAG, "Using direct BlackBox activity manager path for Android 11 or older")
+                BlackBoxCore.getBActivityManager().startActivity(launchIntent, USER_ID)
+            } else {
+                val requested = BlackBoxCore.get().launchApk(packageName, USER_ID)
+                if (!requested) {
+                    return EngineResult(false, "تعذر إرسال طلب تشغيل التطبيق الافتراضي.", packageName)
+                }
+
+                if (!waitForVirtualProcess(packageName, PRIMARY_LAUNCH_WAIT_MS)) {
+                    Log.w(
+                        GUEST_TAG,
+                        "LauncherActivity path did not start guest process; trying direct fallback package=" +
+                            packageName
+                    )
+                    BlackBoxCore.getBActivityManager().startActivity(launchIntent, USER_ID)
+                }
+            }
+
+            if (waitForVirtualProcess(packageName, FINAL_LAUNCH_WAIT_MS)) {
+                Log.i(GUEST_TAG, "Guest process verified running package=" + packageName)
+                EngineResult(true, "تم تشغيل التطبيق الافتراضي.", packageName)
+            } else {
+                Log.e(GUEST_TAG, "Guest process did not start package=" + packageName)
+                EngineResult(false, "تعذر تأكيد تشغيل التطبيق الافتراضي.", packageName)
+            }
         } catch (t: Throwable) {
             Log.e(GUEST_TAG, "Guest launch failed package=" + packageName, t)
             EngineResult(false, "تعذر تشغيل التطبيق الافتراضي.", packageName)
@@ -123,6 +163,27 @@ class BlackBoxVirtualEngine : VirtualEngine {
         if (!isReady()) return false
         return try { BlackBoxCore.get().isInstalled(packageName, USER_ID) }
         catch (t: Throwable) { Log.e(TAG, "Virtual install check failed package=" + packageName, t); false }
+    }
+
+    override fun isVirtualProcessRunning(packageName: String): Boolean {
+        if (!isReady()) return false
+        return try {
+            val info = BlackBoxCore.getBActivityManager()
+                .getRunningAppProcesses(packageName, USER_ID)
+            info?.mAppProcessInfoList?.isNotEmpty() == true
+        } catch (t: Throwable) {
+            Log.e(GUEST_TAG, "Virtual process check failed package=" + packageName, t)
+            false
+        }
+    }
+
+    private fun waitForVirtualProcess(packageName: String, timeoutMs: Long): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMs
+        do {
+            if (isVirtualProcessRunning(packageName)) return true
+            Thread.sleep(PROCESS_POLL_MS)
+        } while (System.currentTimeMillis() < deadline)
+        return isVirtualProcessRunning(packageName)
     }
 
     override fun isHostPackageInstalled(packageName: String, context: Context): Boolean {
@@ -155,5 +216,8 @@ class BlackBoxVirtualEngine : VirtualEngine {
         const val TAG = "AIHAM_ENGINE"
         const val GUEST_TAG = "AIHAM_GUEST"
         const val USER_ID = 0
+        const val PROCESS_POLL_MS = 100L
+        const val PRIMARY_LAUNCH_WAIT_MS = 1200L
+        const val FINAL_LAUNCH_WAIT_MS = 3000L
     }
 }
