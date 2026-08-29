@@ -1,7 +1,9 @@
 rootProject.name = "Quotes"
 include ':app'
+include ':AihamVirtualTest'
+project(':AihamVirtualTest').projectDir = file('AihamVirtualTest')
 
-// دالة ذكية للبحث عن مسارات وحدات BlackBox وربطها
+// ربط وحدات BlackBox الموجودة داخل المستودع
 def findModuleDir(String path) {
     def f1 = new File(rootDir, "BlackBox/" + path)
     if (f1.exists()) return f1
