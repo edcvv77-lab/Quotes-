@@ -1,0 +1,6 @@
+build/
+app/build/
+.gradle/
+BlackBox/
+Bcore/build/
+android-mirror/build/

@@ -1,0 +1,3 @@
+[submodule "BlackBox"]
+	path = BlackBox
+	url = https://github.com/FBlackBox/BlackBox.git
