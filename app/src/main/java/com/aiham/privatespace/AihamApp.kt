@@ -1,4 +1,4 @@
-package com.aiham.privatespace
+package com.aiham.quotes
 
 import android.app.Application
 import android.content.Context
@@ -10,7 +10,7 @@ class AihamApp : Application() {
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base)
-        virtualEngine.initialize(base)
+        virtualEngine.initialize(this)
     }
 
     override fun onCreate() {
