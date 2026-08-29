@@ -1,49 +1,155 @@
 package com.aiham.privatespace.engine
 
 import android.content.Context
+import android.content.pm.PackageManager
+import android.util.Log
 import java.io.File
 import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackbox.app.configuration.ClientConfiguration
 
 class BlackBoxVirtualEngine : VirtualEngine {
-    private var isInitialized = false
+    @Volatile private var attached = false
+    @Volatile private var created = false
 
-    override fun initialize(context: Context) {
-        if (!isInitialized) {
+    override fun initialize(context: Context): EngineResult {
+        if (attached) return EngineResult(true, "BlackBox attach already completed")
+        return try {
+            Log.i(TAG, "Attaching BlackBox to host package=" + context.packageName)
             BlackBoxCore.get().doAttachBaseContext(context, object : ClientConfiguration() {
                 override fun getHostPackageName(): String = context.packageName
+                override fun isEnableDaemonService(): Boolean = false
             })
-            isInitialized = true
+            attached = true
+            EngineResult(true, "BlackBox attach completed")
+        } catch (t: Throwable) {
+            Log.e(TAG, "BlackBox attach failed", t)
+            EngineResult(false, "تعذر تهيئة محرك التطبيقات الافتراضية.")
         }
     }
 
-    override fun installApk(apkFile: File): Boolean {
-        if (!isInitialized) return false
-        val result = BlackBoxCore.get().installPackageAsUser(apkFile, 0)
-        return result.success
+    override fun onApplicationCreate(): EngineResult {
+        if (!attached) return EngineResult(false, "لم يكتمل ربط محرك التطبيقات الافتراضية.")
+        if (created) return EngineResult(true, "BlackBox create already completed")
+        return try {
+            Log.i(TAG, "Completing BlackBox application lifecycle")
+            BlackBoxCore.get().doCreate()
+            created = true
+            val packages = BlackBoxCore.get().getInstalledPackages(0, USER_ID)
+            Log.i(TAG, "BlackBox ready; virtual package count=" + packages.size)
+            EngineResult(true, "محرك التطبيقات الافتراضية جاهز.")
+        } catch (t: Throwable) {
+            created = false
+            Log.e(TAG, "BlackBox create/service probe failed", t)
+            EngineResult(false, "تعذر تشغيل خدمات التطبيقات الافتراضية.")
+        }
     }
 
-    override fun uninstallApp(packageName: String): Boolean {
-        if (!isInitialized) return false
-        BlackBoxCore.get().uninstallPackageAsUser(packageName, 0)
-        return true
+    override fun installApk(apkFile: File): EngineResult {
+        if (!isReady()) return EngineResult(false, "محرك التطبيقات الافتراضية غير جاهز.")
+        if (!apkFile.isFile || apkFile.length() <= 0L) return EngineResult(false, "ملف التطبيق غير صالح.")
+        return try {
+            val archiveInfo = BlackBoxCore.getPackageManager().getPackageArchiveInfo(apkFile.absolutePath, 0)
+                ?: return EngineResult(false, "تعذر قراءة حزمة التطبيق.")
+            val expectedPackage = archiveInfo.packageName
+            Log.i(GUEST_TAG, "Installing guest package=" + expectedPackage + " bytes=" + apkFile.length())
+            val result = BlackBoxCore.get().installPackageAsUser(apkFile, USER_ID)
+            val installed = BlackBoxCore.get().isInstalled(expectedPackage, USER_ID)
+            if (result != null && result.success && installed) {
+                Log.i(GUEST_TAG, "Guest install verified package=" + expectedPackage)
+                EngineResult(true, "تم تثبيت التطبيق داخل المساحة.", expectedPackage)
+            } else {
+                val detail = result?.msg ?: "BlackBox returned no error detail"
+                Log.e(GUEST_TAG, "Guest install not verified package=" + expectedPackage + " detail=" + detail + " installed=" + installed)
+                EngineResult(false, "تعذر تثبيت التطبيق داخل المساحة.", expectedPackage)
+            }
+        } catch (t: Throwable) {
+            Log.e(GUEST_TAG, "Guest install failed path=" + apkFile.absolutePath, t)
+            EngineResult(false, "تعذر تثبيت التطبيق داخل المساحة.")
+        }
     }
 
-    override fun listInstalledApps(): List<String> {
-        if (!isInitialized) return emptyList()
-        return BlackBoxCore.get().getInstalledPackages(0, 0).map { it.packageName }
+    override fun uninstallApp(packageName: String): EngineResult {
+        if (!isReady()) return EngineResult(false, "محرك التطبيقات الافتراضية غير جاهز.", packageName)
+        return try {
+            if (!BlackBoxCore.get().isInstalled(packageName, USER_ID))
+                return EngineResult(false, "التطبيق غير مثبت داخل المساحة.", packageName)
+            Log.i(GUEST_TAG, "Uninstalling virtual package=" + packageName)
+            BlackBoxCore.get().uninstallPackageAsUser(packageName, USER_ID)
+            val stillInstalled = BlackBoxCore.get().isInstalled(packageName, USER_ID)
+            if (!stillInstalled) {
+                Log.i(GUEST_TAG, "Guest uninstall verified package=" + packageName)
+                EngineResult(true, "تمت إزالة التطبيق من المساحة.", packageName)
+            } else {
+                Log.e(GUEST_TAG, "Guest uninstall could not be verified package=" + packageName)
+                EngineResult(false, "تعذر إزالة التطبيق من المساحة.", packageName)
+            }
+        } catch (t: Throwable) {
+            Log.e(GUEST_TAG, "Guest uninstall failed package=" + packageName, t)
+            EngineResult(false, "تعذر إزالة التطبيق من المساحة.", packageName)
+        }
     }
 
-    override fun launchApp(packageName: String, context: Context): Boolean {
-        if (!isInitialized) return false
-        return BlackBoxCore.get().launchApk(packageName, 0)
+    override fun listInstalledApps(): Result<List<String>> {
+        if (!isReady()) return Result.failure(IllegalStateException("BlackBox is not ready"))
+        return runCatching {
+            val packages = BlackBoxCore.get().getInstalledPackages(0, USER_ID).map { it.packageName }.distinct().sorted()
+            Log.i(TAG, "Virtual packages=" + packages.joinToString())
+            packages
+        }.onFailure { Log.e(TAG, "Failed to query virtual packages", it) }
+    }
+
+    override fun launchApp(packageName: String, context: Context): EngineResult {
+        if (!isReady()) return EngineResult(false, "محرك التطبيقات الافتراضية غير جاهز.", packageName)
+        return try {
+            if (!BlackBoxCore.get().isInstalled(packageName, USER_ID))
+                return EngineResult(false, "التطبيق غير مثبت داخل المساحة.", packageName)
+            val launchIntent = BlackBoxCore.getBPackageManager().getLaunchIntentForPackage(packageName, USER_ID)
+                ?: return EngineResult(false, "لا توجد شاشة تشغيل للتطبيق.", packageName)
+            Log.i(GUEST_TAG, "Launching virtual package=" + packageName + " component=" + launchIntent.component)
+            val requested = BlackBoxCore.get().launchApk(packageName, USER_ID)
+            if (requested) EngineResult(true, "تم إرسال طلب تشغيل التطبيق.", packageName)
+            else EngineResult(false, "تعذر تشغيل التطبيق الافتراضي.", packageName)
+        } catch (t: Throwable) {
+            Log.e(GUEST_TAG, "Guest launch failed package=" + packageName, t)
+            EngineResult(false, "تعذر تشغيل التطبيق الافتراضي.", packageName)
+        }
     }
 
     override fun isInstalled(packageName: String): Boolean {
-        return listInstalledApps().contains(packageName)
+        if (!isReady()) return false
+        return try { BlackBoxCore.get().isInstalled(packageName, USER_ID) }
+        catch (t: Throwable) { Log.e(TAG, "Virtual install check failed package=" + packageName, t); false }
+    }
+
+    override fun isHostPackageInstalled(packageName: String, context: Context): Boolean {
+        return try {
+            context.packageManager.getPackageInfo(packageName, 0)
+            true
+        } catch (_: PackageManager.NameNotFoundException) {
+            false
+        } catch (t: Throwable) {
+            Log.e(TAG, "Host package visibility check failed package=" + packageName, t)
+            false
+        }
     }
 
     override fun getEngineStatus(): String {
-        return if (isInitialized) "Initialized (FBlackBox)" else "Not Initialized"
+        if (!attached) return "غير مهيأ"
+        if (!created) return "التهيئة غير مكتملة"
+        return try {
+            BlackBoxCore.get().getInstalledPackages(0, USER_ID)
+            "جاهز"
+        } catch (t: Throwable) {
+            Log.e(TAG, "Engine health probe failed", t)
+            "غير متاح"
+        }
+    }
+
+    private fun isReady(): Boolean = attached && created
+
+    private companion object {
+        const val TAG = "AIHAM_ENGINE"
+        const val GUEST_TAG = "AIHAM_GUEST"
+        const val USER_ID = 0
     }
 }
