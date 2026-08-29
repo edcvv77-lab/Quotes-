@@ -3,27 +3,55 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:padding="20dp"
+    android:background="#0F172A">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="⚡ التطبيقات المعزولة داخل المحرك"
-        android:textSize="18sp"
+        android:text="المساحة الخاصة"
+        android:textColor="#FFFFFF"
+        android:textSize="26sp"
         android:textStyle="bold"
         android:gravity="center"
-        android:paddingBottom="12dp" />
+        android:paddingBottom="8dp" />
 
-    <ListView
-        android:id="@+id/listViewPrivateApps"
-        android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1" />
-
-    <Button
-        android:id="@+id/btnCloneApp"
+    <TextView
+        android:id="@+id/tvPrivateStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="استنساخ تطبيق من الهاتف (واتساب/تليجرام..)"
-        android:textSize="14sp" />
+        android:text="الحالة: جاري التحقق..."
+        android:textColor="#CBD5E1"
+        android:textSize="14sp"
+        android:padding="12dp" />
+
+    <Button
+        android:id="@+id/btnInstallApk"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="تثبيت التطبيق التجريبي" />
+
+    <Button
+        android:id="@+id/btnListApps"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="عرض التطبيقات المعزولة" />
+
+    <Button
+        android:id="@+id/btnLaunchApp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="تشغيل التطبيق التجريبي" />
+
+    <Button
+        android:id="@+id/btnUninstallApp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="إزالة التطبيق التجريبي" />
+
+    <Button
+        android:id="@+id/btnBack"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="العودة" />
 </LinearLayout>
