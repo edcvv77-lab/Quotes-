@@ -3,3 +3,5 @@ app/build/
 .gradle/
 Bcore/build/
 android-mirror/build/
+
+app/src/main/assets/*.apk
