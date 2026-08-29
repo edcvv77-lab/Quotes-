@@ -1,4 +1,4 @@
-package com.aiham.privatespace
+package com.aiham.quotes
 
 import android.app.AlertDialog
 import android.os.Bundle
@@ -7,6 +7,7 @@ import android.widget.EditText
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.aiham.privatespace.engine.BlackBoxVirtualEngine
 import java.io.File
 import java.io.FileOutputStream
 import java.security.MessageDigest
@@ -15,6 +16,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var tvQuotes: TextView
     private lateinit var tvPrivateStatus: TextView
     private val prefs by lazy { getSharedPreferences("quotes", MODE_PRIVATE) }
+    private val virtualEngine: BlackBoxVirtualEngine by lazy { (application as AihamApp).virtualEngine }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,24 +73,23 @@ class MainActivity : AppCompatActivity() {
     private fun enterPrivateSpace() {
         setContentView(R.layout.activity_private_space)
         tvPrivateStatus = findViewById(R.id.tvPrivateStatus)
-        val engine = (application as AihamApp).virtualEngine
-        tvPrivateStatus.text = "الحالة: ${engine.getEngineStatus()}"
+        tvPrivateStatus.text = "الحالة: ${virtualEngine.getEngineStatus()}"
 
         findViewById<Button>(R.id.btnInstallApk).setOnClickListener {
             val apk = extractTestApk()
-            val ok = apk != null && engine.installApk(apk)
+            val ok = apk != null && virtualEngine.installApk(apk)
             tvPrivateStatus.text = if (ok) "تم تثبيت التطبيق داخل المساحة" else "فشل التثبيت"
         }
         findViewById<Button>(R.id.btnListApps).setOnClickListener {
-            val apps = engine.listInstalledApps()
+            val apps = virtualEngine.listInstalledApps()
             tvPrivateStatus.text = if (apps.isEmpty()) "لا توجد تطبيقات افتراضية مثبتة" else apps.joinToString("\n")
         }
         findViewById<Button>(R.id.btnLaunchApp).setOnClickListener {
-            val ok = engine.launchApp("com.aiham.virtualtest", this)
+            val ok = virtualEngine.launchApp("com.aiham.virtualtest", this)
             tvPrivateStatus.text = if (ok) "تم تشغيل التطبيق داخل المساحة" else "تعذر تشغيل التطبيق"
         }
         findViewById<Button>(R.id.btnUninstallApp).setOnClickListener {
-            val ok = engine.uninstallApp("com.aiham.virtualtest")
+            val ok = virtualEngine.uninstallApp("com.aiham.virtualtest")
             tvPrivateStatus.text = if (ok) "تم إلغاء تثبيت التطبيق الافتراضي" else "فشل إلغاء التثبيت"
         }
         findViewById<Button>(R.id.btnBack).setOnClickListener { showQuotesHome() }
@@ -115,7 +116,6 @@ class MainActivity : AppCompatActivity() {
         .joinToString("") { "%02x".format(it) }
 
     companion object {
-        // SHA-256("aiham77rk"). This is a hidden trigger, not strong authentication.
         private const val SECRET_HASH = "1fe4beb5ba37284958745a8f36824d2cc794e7a4eef3d55215cb66d9a7c30a84"
     }
 }
