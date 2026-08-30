@@ -75,6 +75,7 @@ jobs:
 
           adb logcat -d -v time > logcat.txt
           grep -q 'AIHAM_GUEST_TEST.*Guest MainActivity onResume' logcat.txt
+          grep -q 'AIHAM_ENGINE.*Storage isolation.*internal=true.*publicExternal=false' logcat.txt
 
       - name: Upload runtime evidence
         if: always()
