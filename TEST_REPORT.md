@@ -62,6 +62,16 @@ The host integration therefore no longer trusts `InstallResult.success` alone. I
 
 Uninstall is also verified by querying BlackBox after the uninstall request.
 
+## Secure storage hardening
+
+The host now wraps the context passed into BlackBox so BlackBox virtual external storage resolves under the host's private internal data directory rather than `/storage/emulated/.../Android/data`.
+
+Runtime initialization fails closed if either the BlackBox virtual root or virtual external root escapes the host private data directory or resolves under public `/storage`.
+
+The Android instrumentation acceptance test now requires the BlackBox virtual external root to be inside the host private data directory and not under `/storage`.
+
+The self-hosted Android 11 workflow additionally requires an `AIHAM_ENGINE` log proving `internal=true` and `publicExternal=false`.
+
 ## Guest APK pipeline
 
 The generated guest APK is no longer committed as a source asset.
@@ -118,16 +128,23 @@ A separate manual workflow, `.github/workflows/android11-device-runtime.yml`, is
 
 ## Physical Android 11 status
 
-Status: NOT YET EXECUTED.
+Status: PARTIALLY VERIFIED BY USER-PROVIDED DEVICE EVIDENCE.
 
-The current tool environment has no connected ARM Android 11 device. Therefore the following must not be reported as passed yet:
+The current tool environment still has no directly connected ARM Android 11 device, so automated ADB acceptance has not been executed by the assistant.
 
-- BlackBox runtime service startup on the target phone.
-- Virtual installation of `com.aiham.virtualtest`.
-- Guest activity actually becoming visible/running.
-- Virtual uninstall on-device.
-- Settings -> Apps visibility.
-- `adb shell pm list packages` verification.
+User-provided evidence from the target Android 11 tablet has verified:
+
+- the Quotes host opens;
+- the secret flow opens the private space;
+- `com.aiham.virtualtest` installs inside BlackBox;
+- the virtual guest launches far enough for the visible `Aiham Private Space Test` activity to appear.
+
+Still requiring explicit Android 11 acceptance evidence:
+
+- virtual uninstall and disappearance after uninstall;
+- Android Settings -> Apps showing only the Quotes host and not the guest;
+- `adb shell pm list packages` proving the guest is absent from the host package manager;
+- the new internal-only storage root after the secure-storage hardening change.
 
 ### Android 11 test procedure
 
