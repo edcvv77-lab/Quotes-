@@ -18,6 +18,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.aiham.privatespace.apps.GuestApkInspector
 import com.aiham.privatespace.apps.GuestApkMetadata
 import com.aiham.privatespace.apps.GuestAppCatalog
+import com.aiham.privatespace.apps.InstalledAppCandidate
+import com.aiham.privatespace.apps.InstalledAppCloneManager
 import com.aiham.privatespace.engine.BlackBoxVirtualEngine
 import com.aiham.privatespace.permissions.GuestPermissionManager
 import java.io.File
@@ -33,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private val guestPermissionManager by lazy { GuestPermissionManager(this) }
     private val guestApkInspector by lazy { GuestApkInspector(this) }
     private val guestAppCatalog by lazy { GuestAppCatalog(this) }
+    private val installedAppCloneManager by lazy { InstalledAppCloneManager(this) }
 
     private var pendingGuestApk: File? = null
     private var inPrivateSpace = false
@@ -119,6 +122,7 @@ class MainActivity : AppCompatActivity() {
         appsContainer = findViewById(R.id.appsContainer)
 
         findViewById<Button>(R.id.btnPickApk).setOnClickListener { openApkPicker() }
+        findViewById<Button>(R.id.btnCloneInstalledApp).setOnClickListener { showInstalledAppPicker() }
         findViewById<Button>(R.id.btnRefreshApps).setOnClickListener { refreshVirtualApps() }
         findViewById<Button>(R.id.btnBack).setOnClickListener { showQuotesHome() }
 
@@ -161,43 +165,158 @@ class MainActivity : AppCompatActivity() {
             val metadata = guestApkInspector.copyAndInspect(uri).getOrElse { error ->
                 Log.e(SPACE_TAG, "Selected file is not a usable APK", error)
                 runOnUiThread {
-                    tvPrivateStatus.text = "الملف المختار ليس APK صالحًا."
+                    if (inPrivateSpace) tvPrivateStatus.text = "الملف المختار ليس APK صالحًا."
                 }
                 return@Thread
             }
 
-            if (virtualEngine.isInstalled(metadata.packageName)) {
-                metadata.apkFile.delete()
+            prepareGuestForInstall(metadata)
+        }.start()
+    }
+
+    private fun showInstalledAppPicker() {
+        if (!inPrivateSpace) return
+
+        tvPrivateStatus.text = "جاري قراءة التطبيقات المثبتة..."
+
+        Thread {
+            val result = installedAppCloneManager.listCloneCandidates()
+
+            runOnUiThread {
+                if (!inPrivateSpace) return@runOnUiThread
+
+                result.fold(
+                    onSuccess = { apps ->
+                        if (apps.isEmpty()) {
+                            tvPrivateStatus.text = "لم يتم العثور على تطبيقات قابلة للنسخ."
+                            return@fold
+                        }
+
+                        val labels = apps.map { app ->
+                            buildString {
+                                append(app.label)
+                                append("\n")
+                                append(app.packageName)
+                                if (app.usesSplitApks) {
+                                    append("  •  Split APK")
+                                }
+                            }
+                        }.toTypedArray()
+
+                        AlertDialog.Builder(this)
+                            .setTitle("اختر تطبيقًا لنسخه")
+                            .setItems(labels) { _, which ->
+                                val selected = apps[which]
+                                if (selected.usesSplitApks) {
+                                    showSplitApkUnsupported(selected)
+                                } else {
+                                    cloneInstalledApp(selected)
+                                }
+                            }
+                            .setNegativeButton("إلغاء", null)
+                            .show()
+
+                        tvPrivateStatus.text = "اختر التطبيق الذي تريد نسخه إلى المساحة."
+                    },
+                    onFailure = { error ->
+                        Log.e(SPACE_TAG, "Unable to enumerate installed apps", error)
+                        tvPrivateStatus.text = "تعذر قراءة التطبيقات المثبتة على الجهاز."
+                    }
+                )
+            }
+        }.start()
+    }
+
+    private fun showSplitApkUnsupported(app: InstalledAppCandidate) {
+        Log.w(
+            SPACE_TAG,
+            "Clone blocked for split APK package=" + app.packageName +
+                " splits=" + app.splitApkPaths.size
+        )
+
+        AlertDialog.Builder(this)
+            .setTitle("هذا التطبيق يستخدم Split APK")
+            .setMessage(
+                app.label + " يعتمد على " + app.splitApkPaths.size +
+                    " جزء إضافي إلى جانب base.apk. إصدار BlackBox الحالي لا يحمّل هذه الأجزاء " +
+                    "بشكل صحيح، لذلك تم إيقاف النسخ بدل تثبيت نسخة ناقصة."
+            )
+            .setPositiveButton("حسنًا", null)
+            .show()
+
+        tvPrivateStatus.text = "تعذر نسخ " + app.label + " بأمان لأنه يستخدم Split APK."
+    }
+
+    private fun cloneInstalledApp(app: InstalledAppCandidate) {
+        if (!inPrivateSpace) return
+
+        tvPrivateStatus.text = "جاري تجهيز نسخة مستقلة من " + app.label + "..."
+
+        Thread {
+            val copiedApk = installedAppCloneManager.copyBaseApkForClone(app).getOrElse { error ->
+                Log.e(SPACE_TAG, "Installed app clone copy failed package=" + app.packageName, error)
                 runOnUiThread {
+                    if (inPrivateSpace) {
+                        tvPrivateStatus.text = "تعذر نسخ ملف التطبيق من الجهاز."
+                    }
+                }
+                return@Thread
+            }
+
+            val metadata = guestApkInspector.inspectFile(copiedApk).getOrElse { error ->
+                Log.e(SPACE_TAG, "Copied installed app APK could not be inspected", error)
+                copiedApk.delete()
+                runOnUiThread {
+                    if (inPrivateSpace) {
+                        tvPrivateStatus.text = "تعذر قراءة نسخة التطبيق المجهزة."
+                    }
+                }
+                return@Thread
+            }
+
+            prepareGuestForInstall(metadata)
+        }.start()
+    }
+
+    private fun prepareGuestForInstall(metadata: GuestApkMetadata) {
+        if (virtualEngine.isInstalled(metadata.packageName)) {
+            metadata.apkFile.delete()
+            runOnUiThread {
+                if (inPrivateSpace) {
                     tvPrivateStatus.text =
                         "التطبيق موجود داخل المساحة بالفعل. احذفه أولًا إذا أردت تثبيت نسخة أخرى."
                 }
-                return@Thread
             }
+            return
+        }
 
-            val plan = guestPermissionManager.buildPlan(metadata.apkFile).getOrElse { error ->
-                Log.e(SPACE_TAG, "Unable to build guest permission plan", error)
-                metadata.apkFile.delete()
-                runOnUiThread {
-                    tvPrivateStatus.text = "تعذر فحص أذونات التطبيق."
-                }
-                return@Thread
-            }
-
+        val plan = guestPermissionManager.buildPlan(metadata.apkFile).getOrElse { error ->
+            Log.e(SPACE_TAG, "Unable to build guest permission plan", error)
+            metadata.apkFile.delete()
             runOnUiThread {
-                if (plan.missingRuntimePermissions.isEmpty()) {
-                    installImportedGuest(metadata, permissionsDenied = false)
-                } else {
-                    pendingGuestApk = metadata.apkFile
-                    tvPrivateStatus.text =
-                        "يحتاج " + metadata.label + " إلى بعض الأذونات قبل التشغيل."
-                    guestPermissionManager.requestMissingRuntimePermissions(
-                        plan,
-                        REQUEST_GUEST_PERMISSIONS
-                    )
-                }
+                if (inPrivateSpace) tvPrivateStatus.text = "تعذر فحص أذونات التطبيق."
             }
-        }.start()
+            return
+        }
+
+        runOnUiThread {
+            if (!inPrivateSpace) {
+                metadata.apkFile.delete()
+                return@runOnUiThread
+            }
+
+            if (plan.missingRuntimePermissions.isEmpty()) {
+                installImportedGuest(metadata, permissionsDenied = false)
+            } else {
+                pendingGuestApk = metadata.apkFile
+                tvPrivateStatus.text =
+                    "يحتاج " + metadata.label + " إلى بعض الأذونات قبل التشغيل."
+                guestPermissionManager.requestMissingRuntimePermissions(
+                    plan,
+                    REQUEST_GUEST_PERMISSIONS
+                )
+            }
+        }
     }
 
     override fun onRequestPermissionsResult(
@@ -333,7 +452,7 @@ class MainActivity : AppCompatActivity() {
 
         if (packages.isEmpty()) {
             val empty = TextView(this).apply {
-                text = "اضغط «إضافة تطبيق من ملف APK» لاختيار تطبيق."
+                text = "أضف APK أو انسخ تطبيقًا مثبتًا من الجهاز إلى المساحة الخاصة."
                 textSize = 15f
                 setTextColor(0xFF94A3B8.toInt())
                 setPadding(12, 32, 12, 32)
