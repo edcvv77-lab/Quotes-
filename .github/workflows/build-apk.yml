@@ -100,7 +100,12 @@ jobs:
           set -euo pipefail
           APKSIGNER="$ANDROID_HOME/build-tools/30.0.3/apksigner"
           "$APKSIGNER" verify --verbose --print-certs dist/Aiham-Quotes-debug.apk | tee /tmp/host-signing.txt
+          grep -F "Verified using v1 scheme (JAR signing): true" /tmp/host-signing.txt
+          grep -F "Verified using v2 scheme (APK Signature Scheme v2): true" /tmp/host-signing.txt
           grep -F "Signer #1 certificate SHA-256 digest: f62dbd1ddc85cd9983428084525df343cadc24f3a94f451ce7b6713c268d10b7" /tmp/host-signing.txt
+          "$ANDROID_HOME/build-tools/30.0.3/zipalign" -c -p 4 dist/Aiham-Quotes-debug.apk
+          unzip -lv dist/Aiham-Quotes-debug.apk resources.arsc | tee /tmp/resources-entry.txt
+          grep -F "Stored" /tmp/resources-entry.txt
 
       - name: Warn when stable signing is not configured
         if: ${{ env.AIHAM_SIGNING_KEYSTORE_B64 == '' }}
