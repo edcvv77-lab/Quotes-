@@ -5,7 +5,6 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
-import com.aiham.privatespace.storage.PrivateStorageContext
 import com.aiham.privatespace.storage.StorageIsolationPolicy
 import java.io.File
 import top.niunaijun.blackbox.BlackBoxCore
@@ -15,18 +14,18 @@ import top.niunaijun.blackbox.core.env.BEnvironment
 class BlackBoxVirtualEngine : VirtualEngine {
     @Volatile private var attached = false
     @Volatile private var created = false
-    @Volatile private var storageIsolated = false
+    @Volatile private var storageSafe = false
 
     override fun initialize(context: Context): EngineResult {
         if (attached) return EngineResult(true, "BlackBox attach already completed")
         return try {
-            val privateContext = PrivateStorageContext(context.applicationContext)
+            val appContext = context.applicationContext
             Log.i(
                 TAG,
-                "Attaching BlackBox to host package=" + context.packageName +
-                    " privateFiles=" + privateContext.filesDir.absolutePath
+                "Attaching BlackBox with native Android context package=" + context.packageName +
+                    " externalFiles=" + (appContext.getExternalFilesDir(null)?.absolutePath ?: "unavailable")
             )
-            BlackBoxCore.get().doAttachBaseContext(privateContext, object : ClientConfiguration() {
+            BlackBoxCore.get().doAttachBaseContext(appContext, object : ClientConfiguration() {
                 override fun getHostPackageName(): String = context.packageName
                 override fun isEnableDaemonService(): Boolean = false
             })
@@ -47,9 +46,9 @@ class BlackBoxVirtualEngine : VirtualEngine {
             created = true
 
             val storageResult = verifyStorageIsolation(BlackBoxCore.getContext())
-            storageIsolated = storageResult.success
-            if (!storageIsolated) {
-                Log.e(TAG, "BlackBox storage isolation verification failed")
+            storageSafe = storageResult.success
+            if (!storageSafe) {
+                Log.e(TAG, "BlackBox storage safety verification failed")
                 return EngineResult(false, storageResult.message)
             }
 
@@ -218,37 +217,39 @@ class BlackBoxVirtualEngine : VirtualEngine {
     override fun verifyStorageIsolation(context: Context): EngineResult {
         return try {
             val dataDir = context.applicationInfo.dataDir
+            val appExternalFiles = context.getExternalFilesDir(null)?.canonicalPath
+                ?: return EngineResult(false, "تعذر الوصول إلى تخزين التطبيق الخاص.")
             val virtualRoot = BEnvironment.getVirtualRoot().canonicalPath
             val externalRoot = BEnvironment.getExternalVirtualRoot().canonicalPath
 
-            val virtualInternal = StorageIsolationPolicy.isInternal(dataDir, virtualRoot)
-            val externalInternal = StorageIsolationPolicy.isInternal(dataDir, externalRoot)
-            val publicExternal = StorageIsolationPolicy.isPublicStorage(externalRoot)
+            val virtualInternal = StorageIsolationPolicy.isInside(dataDir, virtualRoot)
+            val externalAppScoped = StorageIsolationPolicy.isInside(appExternalFiles, externalRoot)
 
             Log.i(
                 TAG,
-                "Storage isolation dataDir=" + dataDir +
+                "Storage safety dataDir=" + dataDir +
+                    " appExternalFiles=" + appExternalFiles +
                     " virtualRoot=" + virtualRoot +
                     " externalVirtualRoot=" + externalRoot +
-                    " internal=" + (virtualInternal && externalInternal) +
-                    " publicExternal=" + publicExternal
+                    " internalRoot=" + virtualInternal +
+                    " appScopedExternal=" + externalAppScoped
             )
 
-            if (virtualInternal && externalInternal && !publicExternal) {
-                EngineResult(true, "تخزين المساحة معزول داخل التطبيق.")
+            if (virtualInternal && externalAppScoped) {
+                EngineResult(true, "تخزين المساحة محصور داخل نطاق تطبيق اقتباسات.")
             } else {
-                EngineResult(false, "تعذر تأمين تخزين المساحة الخاصة.")
+                EngineResult(false, "تعذر تأمين نطاق تخزين المساحة الخاصة.")
             }
         } catch (t: Throwable) {
-            Log.e(TAG, "Storage isolation verification failed", t)
-            EngineResult(false, "تعذر التحقق من عزل التخزين.")
+            Log.e(TAG, "Storage safety verification failed", t)
+            EngineResult(false, "تعذر التحقق من نطاق التخزين.")
         }
     }
 
     override fun getEngineStatus(): String {
         if (!attached) return "غير مهيأ"
         if (!created) return "التهيئة غير مكتملة"
-        if (!storageIsolated) return "عزل التخزين غير آمن"
+        if (!storageSafe) return "نطاق التخزين غير آمن"
         return try {
             BlackBoxCore.get().getInstalledPackages(0, USER_ID)
             "جاهز"
@@ -258,7 +259,7 @@ class BlackBoxVirtualEngine : VirtualEngine {
         }
     }
 
-    private fun isReady(): Boolean = attached && created && storageIsolated
+    private fun isReady(): Boolean = attached && created && storageSafe
 
     private companion object {
         const val TAG = "AIHAM_ENGINE"
