@@ -24,7 +24,7 @@ The private keystore must never be committed to this public repository.
 
 When all four values exist, `.github/workflows/build-apk.yml` signs the debug host artifact with the permanent update certificate and verifies its SHA-256 certificate fingerprint.
 
-The workflow uses `github.run_number` as Android `versionCode`, so each subsequent workflow build has a monotonically increasing update version.
+The workflow derives Android `versionCode` from `git rev-list --count HEAD`. Because project history is preserved and force-push is prohibited, each subsequent distributed build receives a higher update version even if the workflow itself is recreated.
 
 If signing secrets are missing, CI deliberately falls back to the runner debug key for build/test verification and emits a warning. Such an artifact must not be distributed as the persistent user-facing update build.
 
