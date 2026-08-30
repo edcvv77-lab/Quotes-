@@ -3,6 +3,14 @@ plugins {
     id 'kotlin-android'
 }
 
+def aihamVersionCode = (System.getenv("AIHAM_VERSION_CODE") ?: "1").toInteger()
+def aihamVersionName = System.getenv("AIHAM_VERSION_NAME") ?: "1.0"
+def signingStoreFile = System.getenv("AIHAM_SIGNING_STORE_FILE")
+def signingStorePassword = System.getenv("AIHAM_SIGNING_STORE_PASSWORD")
+def signingKeyAlias = System.getenv("AIHAM_SIGNING_KEY_ALIAS")
+def signingKeyPassword = System.getenv("AIHAM_SIGNING_KEY_PASSWORD")
+def hasAihamSigning = signingStoreFile && signingStorePassword && signingKeyAlias && signingKeyPassword
+
 android {
     namespace 'com.aiham.quotes'
     compileSdk 33
@@ -11,21 +19,38 @@ android {
         applicationId "com.aiham.quotes"
         minSdk 21
         targetSdk 30
-        versionCode 1
-        versionName "1.0"
+        versionCode aihamVersionCode
+        versionName aihamVersionName
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
         }
     }
 
+    signingConfigs {
+        if (hasAihamSigning) {
+            aihamUpdate {
+                storeFile file(signingStoreFile)
+                storePassword signingStorePassword
+                keyAlias signingKeyAlias
+                keyPassword signingKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasAihamSigning) {
+                signingConfig signingConfigs.aihamUpdate
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
             debuggable true
+            if (hasAihamSigning) {
+                signingConfig signingConfigs.aihamUpdate
+            }
         }
     }
 
