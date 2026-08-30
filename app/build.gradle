@@ -7,9 +7,9 @@ def aihamVersionCode = (System.getenv("AIHAM_VERSION_CODE") ?: "1").toInteger()
 def aihamVersionName = System.getenv("AIHAM_VERSION_NAME") ?: "1.0"
 def signingStoreFile = System.getenv("AIHAM_SIGNING_STORE_FILE")
 def signingStorePassword = System.getenv("AIHAM_SIGNING_STORE_PASSWORD")
-def signingKeyAlias = System.getenv("AIHAM_SIGNING_KEY_ALIAS")
-def signingKeyPassword = System.getenv("AIHAM_SIGNING_KEY_PASSWORD")
-def hasAihamSigning = signingStoreFile && signingStorePassword && signingKeyAlias && signingKeyPassword
+def signingKeyAlias = "aiham_quotes_update"
+def signingKeyPassword = signingStorePassword
+def hasAihamSigning = signingStoreFile && signingStorePassword
 
 android {
     namespace 'com.aiham.quotes'
