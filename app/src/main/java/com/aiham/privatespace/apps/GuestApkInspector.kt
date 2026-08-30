@@ -1,7 +1,6 @@
 package com.aiham.privatespace.apps
 
 import android.content.Context
-import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.net.Uri
@@ -28,22 +27,28 @@ class GuestApkInspector(
             }
         } ?: error("Unable to open selected APK")
 
-        require(destination.length() > 0L) { "Selected APK is empty" }
+        inspectFile(destination).getOrThrow()
+    }.onFailure {
+        Log.e(TAG, "Failed to copy selected APK", it)
+    }
+
+    fun inspectFile(file: File): Result<GuestApkMetadata> = runCatching {
+        require(file.isFile && file.length() > 0L) { "Selected APK is empty" }
 
         val packageManager = context.packageManager
         val packageInfo = packageManager.getPackageArchiveInfo(
-            destination.absolutePath,
+            file.absolutePath,
             PackageManager.GET_ACTIVITIES or PackageManager.GET_PERMISSIONS
         ) ?: error("Selected file is not a readable APK")
 
         val applicationInfo = packageInfo.applicationInfo
             ?: error("APK has no application metadata")
 
-        applicationInfo.sourceDir = destination.absolutePath
-        applicationInfo.publicSourceDir = destination.absolutePath
+        applicationInfo.sourceDir = file.absolutePath
+        applicationInfo.publicSourceDir = file.absolutePath
 
         val packageName = packageInfo.packageName
-            ?.takeIf { it.isNotBlank() }
+            .takeIf { it.isNotBlank() }
             ?: error("APK package name is missing")
 
         val label = runCatching {
@@ -60,7 +65,7 @@ class GuestApkInspector(
             packageName = packageName,
             label = label,
             icon = icon,
-            apkFile = destination
+            apkFile = file
         )
     }.onFailure {
         Log.e(TAG, "Failed to inspect selected APK", it)
