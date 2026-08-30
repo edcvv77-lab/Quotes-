@@ -17,12 +17,14 @@ The private keystore must never be committed to this public repository.
 
 ## Required GitHub Actions secrets
 
+Only two repository secrets are required:
+
 - `AIHAM_SIGNING_KEYSTORE_B64`: base64 of the private JKS keystore.
 - `AIHAM_SIGNING_STORE_PASSWORD`: keystore password.
-- `AIHAM_SIGNING_KEY_ALIAS`: `aiham_quotes_update`.
-- `AIHAM_SIGNING_KEY_PASSWORD`: key password.
 
-When all four values exist, `.github/workflows/build-apk.yml` signs the debug host artifact with the permanent update certificate and verifies its SHA-256 certificate fingerprint.
+The alias is fixed in source as `aiham_quotes_update`, and the private key uses the same password as the keystore. This keeps the one-time setup minimal without exposing private signing material.
+
+When both values exist, `.github/workflows/build-apk.yml` signs the debug host artifact with the permanent update certificate and verifies its SHA-256 certificate fingerprint.
 
 The workflow derives Android `versionCode` from `git rev-list --count HEAD`. Because project history is preserved and force-push is prohibited, each subsequent distributed build receives a higher update version even if the workflow itself is recreated.
 
