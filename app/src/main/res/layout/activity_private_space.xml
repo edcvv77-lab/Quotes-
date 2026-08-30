@@ -32,6 +32,12 @@
         android:text="إضافة تطبيق من ملف APK" />
 
     <Button
+        android:id="@+id/btnCloneInstalledApp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="نسخ تطبيق مثبت من الجهاز" />
+
+    <Button
         android:id="@+id/btnRefreshApps"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
