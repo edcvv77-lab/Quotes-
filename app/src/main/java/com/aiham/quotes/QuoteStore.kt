@@ -54,9 +54,10 @@ class SharedPreferencesQuoteStore(
         if (index < 0) return false
 
         val wasFavorite = isFavorite(oldQuote)
+        items.removeAt(index)
         items.removeAll { it == newQuote }
         val targetIndex = index.coerceAtMost(items.size)
-        items[targetIndex] = newQuote
+        items.add(targetIndex, newQuote)
         saveQuotes(items)
 
         if (oldQuote != newQuote) {
