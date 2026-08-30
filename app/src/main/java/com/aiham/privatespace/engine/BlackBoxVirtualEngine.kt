@@ -19,13 +19,12 @@ class BlackBoxVirtualEngine : VirtualEngine {
     override fun initialize(context: Context): EngineResult {
         if (attached) return EngineResult(true, "BlackBox attach already completed")
         return try {
-            val appContext = context.applicationContext
             Log.i(
                 TAG,
                 "Attaching BlackBox with native Android context package=" + context.packageName +
-                    " externalFiles=" + (appContext.getExternalFilesDir(null)?.absolutePath ?: "unavailable")
+                    " externalFiles=" + (context.getExternalFilesDir(null)?.absolutePath ?: "unavailable")
             )
-            BlackBoxCore.get().doAttachBaseContext(appContext, object : ClientConfiguration() {
+            BlackBoxCore.get().doAttachBaseContext(context, object : ClientConfiguration() {
                 override fun getHostPackageName(): String = context.packageName
                 override fun isEnableDaemonService(): Boolean = false
             })
