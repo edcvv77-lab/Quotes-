@@ -15,8 +15,6 @@ jobs:
   build:
     runs-on: ubuntu-22.04
     env:
-      AIHAM_VERSION_CODE: ${{ github.run_number }}
-      AIHAM_VERSION_NAME: 1.0.${{ github.run_number }}
       AIHAM_SIGNING_KEYSTORE_B64: ${{ secrets.AIHAM_SIGNING_KEYSTORE_B64 }}
       AIHAM_SIGNING_STORE_FILE: ${{ github.workspace }}/.signing/Aiham-Quotes-update-key.jks
       AIHAM_SIGNING_STORE_PASSWORD: ${{ secrets.AIHAM_SIGNING_STORE_PASSWORD }}
@@ -33,6 +31,15 @@ jobs:
       - name: Verify pinned BlackBox revision
         run: |
           test "$(git -C BlackBox rev-parse HEAD)" = "823ffcbe8b94055ba68767c7422b4d174550fa86"
+
+      - name: Set monotonic Android app version
+        run: |
+          set -euo pipefail
+          VERSION_CODE="$(git rev-list --count HEAD)"
+          test "$VERSION_CODE" -gt 1
+          echo "AIHAM_VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "AIHAM_VERSION_NAME=1.0.$VERSION_CODE" >> "$GITHUB_ENV"
+
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
