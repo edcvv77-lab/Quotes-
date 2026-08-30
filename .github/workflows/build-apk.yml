@@ -116,10 +116,19 @@ jobs:
           grep -F "top.niunaijun.blackbox.app.LauncherActivity" /tmp/host-manifest.txt
           grep -F "top.niunaijun.blackbox.proxy.ProxyActivity" /tmp/host-manifest.txt
 
-      - name: Upload host APK
+      - name: Upload stable update host APK
+        if: ${{ env.AIHAM_SIGNING_KEYSTORE_B64 != '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: Aiham-Quotes-debug
+          name: Aiham-Quotes-update
+          path: dist/Aiham-Quotes-debug.apk
+          if-no-files-found: error
+
+      - name: Upload CI-only host APK
+        if: ${{ env.AIHAM_SIGNING_KEYSTORE_B64 == '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aiham-Quotes-ci-debug-NOT-FOR-UPDATES
           path: dist/Aiham-Quotes-debug.apk
           if-no-files-found: error
 
