@@ -45,15 +45,19 @@ class BlackBoxRuntimeInstrumentedTest {
             storageIsolation.success
         )
         val hostDataDir = File(context.applicationInfo.dataDir).canonicalPath
+        val virtualRoot = BEnvironment.getVirtualRoot().canonicalPath
+        assertTrue(
+            "BlackBox internal root escaped host app data: " + virtualRoot,
+            virtualRoot == hostDataDir ||
+                virtualRoot.startsWith(hostDataDir + File.separator)
+        )
+
+        val appExternalFiles = context.getExternalFilesDir(null)!!.canonicalPath
         val virtualExternalRoot = BEnvironment.getExternalVirtualRoot().canonicalPath
         assertTrue(
-            "Virtual external storage escaped host private data: " + virtualExternalRoot,
-            virtualExternalRoot == hostDataDir ||
-                virtualExternalRoot.startsWith(hostDataDir + File.separator)
-        )
-        assertFalse(
-            "Virtual external storage must not use public /storage: " + virtualExternalRoot,
-            virtualExternalRoot == "/storage" || virtualExternalRoot.startsWith("/storage/")
+            "Virtual external storage escaped Quotes app-scoped storage: " + virtualExternalRoot,
+            virtualExternalRoot == appExternalFiles ||
+                virtualExternalRoot.startsWith(appExternalFiles + File.separator)
         )
 
         val guestApk = extractBundledGuest()
