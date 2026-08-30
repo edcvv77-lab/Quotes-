@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.aiham.privatespace.engine.BlackBoxVirtualEngine
+import top.niunaijun.blackbox.core.env.BEnvironment
 import java.io.File
 import java.io.FileOutputStream
 import org.junit.After
@@ -37,6 +38,23 @@ class BlackBoxRuntimeInstrumentedTest {
     @Test
     fun guestLifecycleUsesBlackBoxAndNotHostPackageManager() {
         assertTrue("BlackBox must be ready", engine.getEngineStatus() == "جاهز")
+
+        val storageIsolation = engine.verifyStorageIsolation(context)
+        assertTrue(
+            "Guest storage must be private: " + storageIsolation.message,
+            storageIsolation.success
+        )
+        val hostDataDir = File(context.applicationInfo.dataDir).canonicalPath
+        val virtualExternalRoot = BEnvironment.getExternalVirtualRoot().canonicalPath
+        assertTrue(
+            "Virtual external storage escaped host private data: " + virtualExternalRoot,
+            virtualExternalRoot == hostDataDir ||
+                virtualExternalRoot.startsWith(hostDataDir + File.separator)
+        )
+        assertFalse(
+            "Virtual external storage must not use public /storage: " + virtualExternalRoot,
+            virtualExternalRoot == "/storage" || virtualExternalRoot.startsWith("/storage/")
+        )
 
         val guestApk = extractBundledGuest()
         assertTrue("Bundled guest APK must exist", guestApk.isFile && guestApk.length() > 0L)
