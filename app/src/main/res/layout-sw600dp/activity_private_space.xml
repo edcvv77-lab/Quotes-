@@ -5,71 +5,65 @@
     android:background="#0F172A"
     android:padding="24dp">
 
-    <ScrollView
+    <LinearLayout
         android:layout_width="600dp"
         android:layout_height="match_parent"
         android:layout_gravity="center"
-        android:fillViewport="true">
+        android:orientation="vertical"
+        android:padding="24dp">
 
-        <LinearLayout
+        <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:padding="24dp">
+            android:text="المساحة الخاصة"
+            android:textColor="#FFFFFF"
+            android:textSize="30sp"
+            android:textStyle="bold"
+            android:gravity="center"
+            android:paddingBottom="12dp" />
 
-            <TextView
+        <TextView
+            android:id="@+id/tvPrivateStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="الحالة: جاري التحقق..."
+            android:textColor="#CBD5E1"
+            android:textSize="16sp"
+            android:padding="16dp" />
+
+        <Button
+            android:id="@+id/btnPickApk"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="إضافة تطبيق من ملف APK" />
+
+        <Button
+            android:id="@+id/btnRefreshApps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="تحديث التطبيقات" />
+
+        <ScrollView
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:fillViewport="true"
+            android:paddingTop="12dp">
+
+            <LinearLayout
+                android:id="@+id/appsContainer"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="المساحة الخاصة"
-                android:textColor="#FFFFFF"
-                android:textSize="30sp"
-                android:textStyle="bold"
-                android:gravity="center"
-                android:paddingBottom="12dp" />
+                android:orientation="vertical" />
+        </ScrollView>
 
-            <TextView
-                android:id="@+id/tvPrivateStatus"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="الحالة: جاري التحقق..."
-                android:textColor="#CBD5E1"
-                android:textSize="16sp"
-                android:padding="16dp" />
-
-            <Button
-                android:id="@+id/btnInstallApk"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="56dp"
-                android:text="تثبيت التطبيق التجريبي" />
-
-            <Button
-                android:id="@+id/btnListApps"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="56dp"
-                android:text="عرض التطبيقات المعزولة" />
-
-            <Button
-                android:id="@+id/btnLaunchApp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="56dp"
-                android:text="تشغيل التطبيق التجريبي" />
-
-            <Button
-                android:id="@+id/btnUninstallApp"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="56dp"
-                android:text="إزالة التطبيق التجريبي" />
-
-            <Button
-                android:id="@+id/btnBack"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="56dp"
-                android:text="العودة" />
-        </LinearLayout>
-    </ScrollView>
+        <Button
+            android:id="@+id/btnBack"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:minHeight="56dp"
+            android:text="العودة" />
+    </LinearLayout>
 </FrameLayout>
