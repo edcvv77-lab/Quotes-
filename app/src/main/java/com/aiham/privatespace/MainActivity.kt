@@ -627,7 +627,9 @@ class MainActivity : AppCompatActivity() {
                     onFailure = { error ->
                         Log.e(SPACE_TAG, "Unable to refresh virtual app list", error)
                         appsContainer.removeAllViews()
-                        tvPrivateStatus.text = "تعذر قراءة التطبيقات داخل المساحة."
+                        tvPrivateStatus.text =
+                            "تعذر قراءة التطبيقات داخل المساحة. حالة المحرك: " +
+                                virtualEngine.getEngineStatus()
                     }
                 )
             }
