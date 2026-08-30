@@ -1,17 +1,24 @@
 package com.aiham.quotes
 
 import android.app.AlertDialog
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
+import android.text.Editable
+import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
+import android.view.View
 import android.widget.Button
 import android.widget.EditText
 import android.widget.GridLayout
 import android.widget.ImageView
+import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -25,7 +32,11 @@ import com.aiham.privatespace.permissions.GuestPermissionManager
 import java.io.File
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var tvQuotes: TextView
+    private lateinit var tvQuoteCount: TextView
+    private lateinit var tvListStatus: TextView
+    private lateinit var etQuoteSearch: EditText
+    private lateinit var quotesContainer: LinearLayout
+    private lateinit var btnFavoriteFilter: Button
     private lateinit var tvPrivateStatus: TextView
     private lateinit var appsContainer: GridLayout
 
@@ -39,6 +50,13 @@ class MainActivity : AppCompatActivity() {
 
     private var pendingGuestApk: File? = null
     private var inPrivateSpace = false
+    private var favoritesOnly = false
+
+    private val defaultQuotes = listOf(
+        "الأفعال الصغيرة المتكررة تصنع نتائج كبيرة.",
+        "لا تنتظر الوقت المثالي؛ اصنعه.",
+        "كل خطوة واضحة أفضل من عشر خطوات متخيلة."
+    )
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -71,48 +89,217 @@ class MainActivity : AppCompatActivity() {
 
     private fun showQuotesHome() {
         inPrivateSpace = false
+        favoritesOnly = false
         setContentView(R.layout.activity_main)
-        tvQuotes = findViewById(R.id.tvQuotes)
+
+        tvQuoteCount = findViewById(R.id.tvQuoteCount)
+        tvListStatus = findViewById(R.id.tvListStatus)
+        etQuoteSearch = findViewById(R.id.etQuoteSearch)
+        quotesContainer = findViewById(R.id.quotesContainer)
+        btnFavoriteFilter = findViewById(R.id.btnFavoriteFilter)
+
         findViewById<Button>(R.id.btnAddQuote).setOnClickListener { showAddQuoteDialog() }
+        btnFavoriteFilter.setOnClickListener {
+            favoritesOnly = !favoritesOnly
+            btnFavoriteFilter.text = if (favoritesOnly) "★ عرض الكل" else "☆ المفضلة"
+            renderQuotes()
+        }
+
+        etQuoteSearch.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                renderQuotes()
+            }
+            override fun afterTextChanged(s: Editable?) = Unit
+        })
+
         renderQuotes()
     }
 
     private fun showAddQuoteDialog() {
-        val input = EditText(this).apply {
-            hint = "اكتب اقتباسك هنا"
-            minLines = 3
-            setPadding(32, 24, 32, 24)
-        }
+        val input = createQuoteEditor()
 
         AlertDialog.Builder(this)
             .setTitle("إضافة اقتباس")
+            .setMessage("أضف كلمة أو فكرة تريد الاحتفاظ بها.")
             .setView(input)
             .setPositiveButton("إضافة") { _, _ -> handleSubmittedText(input.text.toString()) }
             .setNegativeButton("إلغاء", null)
             .show()
     }
 
+    private fun createQuoteEditor(initialText: String = ""): EditText {
+        return EditText(this).apply {
+            hint = "اكتب اقتباسك هنا"
+            minLines = 3
+            maxLines = 7
+            setText(initialText)
+            setSelection(text.length)
+            setPadding(36, 28, 36, 28)
+            textDirection = View.TEXT_DIRECTION_LOCALE
+        }
+    }
+
     private fun handleSubmittedText(raw: String) {
         when (val result = quoteService.submit(raw)) {
-            QuoteSubmission.Empty -> Unit
+            QuoteSubmission.Empty ->
+                Toast.makeText(this, "اكتب اقتباسًا أولًا.", Toast.LENGTH_SHORT).show()
             QuoteSubmission.OpenPrivateSpace -> enterPrivateSpace()
             is QuoteSubmission.Saved -> {
+                etQuoteSearch.setText("")
+                favoritesOnly = false
+                btnFavoriteFilter.text = "☆ المفضلة"
                 renderQuotes()
-                Toast.makeText(this, "تمت إضافة الاقتباس", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, "تمت إضافة الاقتباس.", Toast.LENGTH_SHORT).show()
             }
         }
     }
 
     private fun renderQuotes() {
-        val defaults = listOf(
-            "الأفعال الصغيرة المتكررة تصنع نتائج كبيرة.",
-            "لا تنتظر الوقت المثالي؛ اصنعه.",
-            "كل خطوة واضحة أفضل من عشر خطوات متخيلة."
-        )
+        if (!::quotesContainer.isInitialized || inPrivateSpace) return
 
-        tvQuotes.text = (defaults + quoteService.getQuotes())
-            .joinToString("\n\n") { "“" + it + "”" }
+        val query = etQuoteSearch.text?.toString().orEmpty().trim()
+        val items = buildList {
+            defaultQuotes.forEach { add(QuoteUiItem(it, isUserQuote = false)) }
+            quoteService.getQuotes().forEach { add(QuoteUiItem(it, isUserQuote = true)) }
+        }
+
+        val visible = items.filter { item ->
+            val matchesSearch = query.isEmpty() || item.text.contains(query, ignoreCase = true)
+            val matchesFavorite = !favoritesOnly || quoteService.isFavorite(item.text)
+            matchesSearch && matchesFavorite
+        }
+
+        tvQuoteCount.text = "عدد الاقتباسات: " + items.size
+        tvListStatus.text = when {
+            favoritesOnly && query.isNotEmpty() -> "نتائج البحث في المفضلة • " + visible.size
+            favoritesOnly -> "المفضلة • " + visible.size
+            query.isNotEmpty() -> "نتائج البحث • " + visible.size
+            else -> "كل الاقتباسات • " + visible.size
+        }
+
+        quotesContainer.removeAllViews()
+
+        if (visible.isEmpty()) {
+            val message = TextView(this).apply {
+                text = if (favoritesOnly) {
+                    "لا توجد اقتباسات مفضلة تطابق العرض الحالي."
+                } else {
+                    "لا توجد اقتباسات تطابق البحث."
+                }
+                gravity = android.view.Gravity.CENTER
+                textSize = 16f
+                setTextColor(getColorCompat(R.color.quotes_text_secondary))
+                setPadding(24, 64, 24, 64)
+            }
+            quotesContainer.addView(message)
+            return
+        }
+
+        val inflater = LayoutInflater.from(this)
+        visible.forEach { item ->
+            val card = inflater.inflate(R.layout.item_quote_card, quotesContainer, false)
+            bindQuoteCard(card, item)
+            quotesContainer.addView(card)
+        }
     }
+
+    private fun bindQuoteCard(card: View, item: QuoteUiItem) {
+        val favorite = quoteService.isFavorite(item.text)
+
+        card.findViewById<TextView>(R.id.tvQuoteText).text = "“" + item.text + "”"
+        card.findViewById<TextView>(R.id.tvQuoteBadge).text =
+            if (item.isUserQuote) "من اقتباساتي" else "مختار"
+
+        card.findViewById<TextView>(R.id.tvFavoriteMark).visibility =
+            if (favorite) View.VISIBLE else View.GONE
+
+        val favoriteAction = card.findViewById<TextView>(R.id.actionFavorite)
+        favoriteAction.text = if (favorite) "★ محفوظ" else "☆ حفظ"
+        favoriteAction.setOnClickListener {
+            val nowFavorite = quoteService.toggleFavorite(item.text)
+            Toast.makeText(
+                this,
+                if (nowFavorite) "تمت الإضافة إلى المفضلة." else "تمت الإزالة من المفضلة.",
+                Toast.LENGTH_SHORT
+            ).show()
+            renderQuotes()
+        }
+
+        card.findViewById<TextView>(R.id.actionCopy).setOnClickListener {
+            copyQuote(item.text)
+        }
+
+        card.findViewById<TextView>(R.id.actionShare).setOnClickListener {
+            shareQuote(item.text)
+        }
+
+        val edit = card.findViewById<TextView>(R.id.actionEdit)
+        val delete = card.findViewById<TextView>(R.id.actionDelete)
+
+        if (item.isUserQuote) {
+            edit.setOnClickListener { showEditQuoteDialog(item.text) }
+            delete.setOnClickListener { confirmDeleteQuote(item.text) }
+        } else {
+            edit.visibility = View.GONE
+            delete.visibility = View.GONE
+        }
+    }
+
+    private fun showEditQuoteDialog(original: String) {
+        val input = createQuoteEditor(original)
+
+        AlertDialog.Builder(this)
+            .setTitle("تعديل الاقتباس")
+            .setView(input)
+            .setPositiveButton("حفظ") { _, _ ->
+                when (quoteService.updateQuote(original, input.text.toString())) {
+                    QuoteEditResult.Empty ->
+                        Toast.makeText(this, "لا يمكن حفظ اقتباس فارغ.", Toast.LENGTH_SHORT).show()
+                    QuoteEditResult.SecretTriggerRejected ->
+                        Toast.makeText(this, "تعذر حفظ هذا النص.", Toast.LENGTH_SHORT).show()
+                    QuoteEditResult.NotFound ->
+                        Toast.makeText(this, "تعذر العثور على الاقتباس.", Toast.LENGTH_SHORT).show()
+                    is QuoteEditResult.Updated -> {
+                        renderQuotes()
+                        Toast.makeText(this, "تم تعديل الاقتباس.", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            .setNegativeButton("إلغاء", null)
+            .show()
+    }
+
+    private fun confirmDeleteQuote(quote: String) {
+        AlertDialog.Builder(this)
+            .setTitle("حذف الاقتباس")
+            .setMessage("هل تريد حذف هذا الاقتباس نهائيًا؟")
+            .setPositiveButton("حذف") { _, _ ->
+                if (quoteService.deleteQuote(quote)) {
+                    renderQuotes()
+                    Toast.makeText(this, "تم حذف الاقتباس.", Toast.LENGTH_SHORT).show()
+                }
+            }
+            .setNegativeButton("إلغاء", null)
+            .show()
+    }
+
+    private fun copyQuote(quote: String) {
+        val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+        clipboard.setPrimaryClip(ClipData.newPlainText("quote", quote))
+        Toast.makeText(this, "تم نسخ الاقتباس.", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun shareQuote(quote: String) {
+        val intent = Intent(Intent.ACTION_SEND).apply {
+            type = "text/plain"
+            putExtra(Intent.EXTRA_TEXT, quote)
+        }
+        startActivity(Intent.createChooser(intent, "مشاركة الاقتباس"))
+    }
+
+    private fun getColorCompat(colorRes: Int): Int =
+        androidx.core.content.ContextCompat.getColor(this, colorRes)
 
     private fun enterPrivateSpace() {
         inPrivateSpace = true
@@ -580,6 +767,11 @@ class MainActivity : AppCompatActivity() {
             }
         }.start()
     }
+
+    private data class QuoteUiItem(
+        val text: String,
+        val isUserQuote: Boolean
+    )
 
     private companion object {
         const val SPACE_TAG = "AIHAM_SPACE"
