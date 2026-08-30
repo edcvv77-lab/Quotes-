@@ -18,8 +18,6 @@ jobs:
       AIHAM_SIGNING_KEYSTORE_B64: ${{ secrets.AIHAM_SIGNING_KEYSTORE_B64 }}
       AIHAM_SIGNING_STORE_FILE: ${{ github.workspace }}/.signing/Aiham-Quotes-update-key.jks
       AIHAM_SIGNING_STORE_PASSWORD: ${{ secrets.AIHAM_SIGNING_STORE_PASSWORD }}
-      AIHAM_SIGNING_KEY_ALIAS: ${{ secrets.AIHAM_SIGNING_KEY_ALIAS }}
-      AIHAM_SIGNING_KEY_PASSWORD: ${{ secrets.AIHAM_SIGNING_KEY_PASSWORD }}
 
     steps:
       - name: Checkout repository and submodules
