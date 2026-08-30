@@ -5,3 +5,8 @@ Bcore/build/
 android-mirror/build/
 
 app/src/main/assets/*.apk
+
+# Local/private Android signing material
+.signing/
+*.jks
+*.keystore
