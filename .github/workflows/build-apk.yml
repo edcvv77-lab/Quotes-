@@ -14,6 +14,14 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-22.04
+    env:
+      AIHAM_VERSION_CODE: ${{ github.run_number }}
+      AIHAM_VERSION_NAME: 1.0.${{ github.run_number }}
+      AIHAM_SIGNING_KEYSTORE_B64: ${{ secrets.AIHAM_SIGNING_KEYSTORE_B64 }}
+      AIHAM_SIGNING_STORE_FILE: ${{ github.workspace }}/.signing/Aiham-Quotes-update-key.jks
+      AIHAM_SIGNING_STORE_PASSWORD: ${{ secrets.AIHAM_SIGNING_STORE_PASSWORD }}
+      AIHAM_SIGNING_KEY_ALIAS: ${{ secrets.AIHAM_SIGNING_KEY_ALIAS }}
+      AIHAM_SIGNING_KEY_PASSWORD: ${{ secrets.AIHAM_SIGNING_KEY_PASSWORD }}
 
     steps:
       - name: Checkout repository and submodules
@@ -40,6 +48,15 @@ jobs:
         run: |
           yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platform-tools" "platforms;android-33" "build-tools;30.0.3" "ndk;21.0.6113669"
+
+      - name: Prepare stable update signing key
+        if: ${{ env.AIHAM_SIGNING_KEYSTORE_B64 != '' }}
+        run: |
+          set -euo pipefail
+          mkdir -p .signing
+          printf '%s' "$AIHAM_SIGNING_KEYSTORE_B64" | base64 --decode > "$AIHAM_SIGNING_STORE_FILE"
+          test -s "$AIHAM_SIGNING_STORE_FILE"
+          chmod 600 "$AIHAM_SIGNING_STORE_FILE"
 
       - name: Make Gradle executable
         run: chmod +x ./gradlew
@@ -71,6 +88,19 @@ jobs:
           test -s dist/AihamVirtualTest-debug.apk
           test -s dist/Aiham-Quotes-runtime-tests.apk
           sha256sum dist/*.apk
+
+      - name: Verify stable update signature when configured
+        if: ${{ env.AIHAM_SIGNING_KEYSTORE_B64 != '' }}
+        run: |
+          set -euo pipefail
+          APKSIGNER="$ANDROID_HOME/build-tools/30.0.3/apksigner"
+          "$APKSIGNER" verify --verbose --print-certs dist/Aiham-Quotes-debug.apk | tee /tmp/host-signing.txt
+          grep -F "Signer #1 certificate SHA-256 digest: f62dbd1ddc85cd9983428084525df343cadc24f3a94f451ce7b6713c268d10b7" /tmp/host-signing.txt
+
+      - name: Warn when stable signing is not configured
+        if: ${{ env.AIHAM_SIGNING_KEYSTORE_B64 == '' }}
+        run: |
+          echo "::warning::Stable Aiham update signing secrets are not configured; this CI artifact uses the runner debug key and is not suitable for long-term in-place updates."
 
       - name: Verify final APK metadata and merged BlackBox manifest
         run: |
