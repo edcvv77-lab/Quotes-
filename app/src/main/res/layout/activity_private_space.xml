@@ -26,28 +26,30 @@
         android:padding="12dp" />
 
     <Button
-        android:id="@+id/btnInstallApk"
+        android:id="@+id/btnPickApk"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="تثبيت التطبيق التجريبي" />
+        android:text="إضافة تطبيق من ملف APK" />
 
     <Button
-        android:id="@+id/btnListApps"
+        android:id="@+id/btnRefreshApps"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="عرض التطبيقات المعزولة" />
+        android:text="تحديث التطبيقات" />
 
-    <Button
-        android:id="@+id/btnLaunchApp"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="تشغيل التطبيق التجريبي" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:paddingTop="10dp">
 
-    <Button
-        android:id="@+id/btnUninstallApp"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="إزالة التطبيق التجريبي" />
+        <LinearLayout
+            android:id="@+id/appsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical" />
+    </ScrollView>
 
     <Button
         android:id="@+id/btnBack"
