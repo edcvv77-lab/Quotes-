@@ -10,8 +10,8 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.widget.Button
 import android.widget.EditText
+import android.widget.GridLayout
 import android.widget.ImageView
-import android.widget.LinearLayout
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -27,7 +27,7 @@ import java.io.File
 class MainActivity : AppCompatActivity() {
     private lateinit var tvQuotes: TextView
     private lateinit var tvPrivateStatus: TextView
-    private lateinit var appsContainer: LinearLayout
+    private lateinit var appsContainer: GridLayout
 
     private val prefs by lazy { getSharedPreferences("quotes", MODE_PRIVATE) }
     private val quoteService by lazy { QuoteService(SharedPreferencesQuoteStore(prefs)) }
@@ -432,9 +432,9 @@ class MainActivity : AppCompatActivity() {
                         renderVirtualApps(packages)
                         tvPrivateStatus.text =
                             if (packages.isEmpty()) {
-                                "المساحة جاهزة. لا توجد تطبيقات مثبتة."
+                                "المساحة جاهزة • التخزين معزول داخليًا • لا توجد تطبيقات."
                             } else {
-                                "المساحة جاهزة. التطبيقات: " + packages.size
+                                "المساحة جاهزة • التخزين معزول داخليًا • التطبيقات: " + packages.size
                             }
                     },
                     onFailure = { error ->
@@ -452,25 +452,31 @@ class MainActivity : AppCompatActivity() {
 
         if (packages.isEmpty()) {
             val empty = TextView(this).apply {
-                text = "أضف APK أو انسخ تطبيقًا مثبتًا من الجهاز إلى المساحة الخاصة."
+                text = "لا توجد تطبيقات داخل المساحة بعد.\nأضف APK أو انسخ تطبيقًا مثبتًا من الجهاز."
                 textSize = 15f
+                gravity = android.view.Gravity.CENTER
                 setTextColor(0xFF94A3B8.toInt())
-                setPadding(12, 32, 12, 32)
+                setPadding(20, 48, 20, 48)
             }
-            appsContainer.addView(empty)
+            val emptyParams = GridLayout.LayoutParams().apply {
+                width = GridLayout.LayoutParams.MATCH_PARENT
+                columnSpec = GridLayout.spec(0, appsContainer.columnCount)
+            }
+            appsContainer.addView(empty, emptyParams)
             return
         }
 
         val inflater = LayoutInflater.from(this)
+        val columns = appsContainer.columnCount.coerceAtLeast(1)
+        val margin = (8 * resources.displayMetrics.density).toInt()
 
         packages.forEach { packageName ->
             val record = guestAppCatalog.get(packageName)
-            val row = inflater.inflate(R.layout.item_guest_app, appsContainer, false)
+            val tile = inflater.inflate(R.layout.item_guest_app, appsContainer, false)
 
-            row.findViewById<TextView>(R.id.tvGuestLabel).text = record.label
-            row.findViewById<TextView>(R.id.tvGuestPackage).text = record.packageName
+            tile.findViewById<TextView>(R.id.tvGuestLabel).text = record.label
 
-            val iconView = row.findViewById<ImageView>(R.id.ivGuestIcon)
+            val iconView = tile.findViewById<ImageView>(R.id.ivGuestIcon)
             val icon = record.iconPath?.let(Drawable::createFromPath)
             if (icon != null) {
                 iconView.setImageDrawable(icon)
@@ -478,16 +484,38 @@ class MainActivity : AppCompatActivity() {
                 iconView.setImageResource(android.R.drawable.sym_def_app_icon)
             }
 
-            row.findViewById<Button>(R.id.btnGuestLaunch).setOnClickListener {
+            tile.setOnClickListener {
                 launchVirtualApp(record.packageName, record.label)
             }
 
-            row.findViewById<Button>(R.id.btnGuestRemove).setOnClickListener {
-                confirmRemoveVirtualApp(record.packageName, record.label)
+            tile.setOnLongClickListener {
+                showGuestActions(record.packageName, record.label)
+                true
             }
 
-            appsContainer.addView(row)
+            val params = GridLayout.LayoutParams().apply {
+                width = 0
+                height = GridLayout.LayoutParams.WRAP_CONTENT
+                columnSpec = GridLayout.spec(GridLayout.UNDEFINED, 1, 1f)
+                setMargins(margin, margin, margin, margin)
+            }
+
+            appsContainer.addView(tile, params)
         }
+    }
+
+    private fun showGuestActions(packageName: String, label: String) {
+        AlertDialog.Builder(this)
+            .setTitle(label)
+            .setMessage(packageName)
+            .setItems(arrayOf("تشغيل", "إزالة من المساحة")) { _, which ->
+                when (which) {
+                    0 -> launchVirtualApp(packageName, label)
+                    1 -> confirmRemoveVirtualApp(packageName, label)
+                }
+            }
+            .setNegativeButton("إلغاء", null)
+            .show()
     }
 
     private fun launchVirtualApp(packageName: String, label: String) {
