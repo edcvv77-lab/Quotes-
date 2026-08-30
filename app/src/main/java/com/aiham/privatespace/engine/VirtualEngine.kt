@@ -19,5 +19,6 @@ interface VirtualEngine {
     fun isInstalled(packageName: String): Boolean
     fun isVirtualProcessRunning(packageName: String): Boolean
     fun isHostPackageInstalled(packageName: String, context: Context): Boolean
+    fun verifyStorageIsolation(context: Context): EngineResult
     fun getEngineStatus(): String
 }
