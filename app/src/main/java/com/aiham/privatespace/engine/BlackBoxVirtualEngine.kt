@@ -5,19 +5,28 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.util.Log
+import com.aiham.privatespace.storage.PrivateStorageContext
+import com.aiham.privatespace.storage.StorageIsolationPolicy
 import java.io.File
 import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackbox.app.configuration.ClientConfiguration
+import top.niunaijun.blackbox.core.env.BEnvironment
 
 class BlackBoxVirtualEngine : VirtualEngine {
     @Volatile private var attached = false
     @Volatile private var created = false
+    @Volatile private var storageIsolated = false
 
     override fun initialize(context: Context): EngineResult {
         if (attached) return EngineResult(true, "BlackBox attach already completed")
         return try {
-            Log.i(TAG, "Attaching BlackBox to host package=" + context.packageName)
-            BlackBoxCore.get().doAttachBaseContext(context, object : ClientConfiguration() {
+            val privateContext = PrivateStorageContext(context.applicationContext)
+            Log.i(
+                TAG,
+                "Attaching BlackBox to host package=" + context.packageName +
+                    " privateFiles=" + privateContext.filesDir.absolutePath
+            )
+            BlackBoxCore.get().doAttachBaseContext(privateContext, object : ClientConfiguration() {
                 override fun getHostPackageName(): String = context.packageName
                 override fun isEnableDaemonService(): Boolean = false
             })
@@ -36,6 +45,14 @@ class BlackBoxVirtualEngine : VirtualEngine {
             Log.i(TAG, "Completing BlackBox application lifecycle")
             BlackBoxCore.get().doCreate()
             created = true
+
+            val storageResult = verifyStorageIsolation(BlackBoxCore.getContext())
+            storageIsolated = storageResult.success
+            if (!storageIsolated) {
+                Log.e(TAG, "BlackBox storage isolation verification failed")
+                return EngineResult(false, storageResult.message)
+            }
+
             if (BlackBoxCore.get().isMainProcess) {
                 val packages = BlackBoxCore.get().getInstalledPackages(0, USER_ID)
                 Log.i(TAG, "BlackBox ready in main process; virtual package count=" + packages.size)
@@ -198,9 +215,40 @@ class BlackBoxVirtualEngine : VirtualEngine {
         }
     }
 
+    override fun verifyStorageIsolation(context: Context): EngineResult {
+        return try {
+            val dataDir = context.applicationInfo.dataDir
+            val virtualRoot = BEnvironment.getVirtualRoot().canonicalPath
+            val externalRoot = BEnvironment.getExternalVirtualRoot().canonicalPath
+
+            val virtualInternal = StorageIsolationPolicy.isInternal(dataDir, virtualRoot)
+            val externalInternal = StorageIsolationPolicy.isInternal(dataDir, externalRoot)
+            val publicExternal = StorageIsolationPolicy.isPublicStorage(externalRoot)
+
+            Log.i(
+                TAG,
+                "Storage isolation dataDir=" + dataDir +
+                    " virtualRoot=" + virtualRoot +
+                    " externalVirtualRoot=" + externalRoot +
+                    " internal=" + (virtualInternal && externalInternal) +
+                    " publicExternal=" + publicExternal
+            )
+
+            if (virtualInternal && externalInternal && !publicExternal) {
+                EngineResult(true, "تخزين المساحة معزول داخل التطبيق.")
+            } else {
+                EngineResult(false, "تعذر تأمين تخزين المساحة الخاصة.")
+            }
+        } catch (t: Throwable) {
+            Log.e(TAG, "Storage isolation verification failed", t)
+            EngineResult(false, "تعذر التحقق من عزل التخزين.")
+        }
+    }
+
     override fun getEngineStatus(): String {
         if (!attached) return "غير مهيأ"
         if (!created) return "التهيئة غير مكتملة"
+        if (!storageIsolated) return "عزل التخزين غير آمن"
         return try {
             BlackBoxCore.get().getInstalledPackages(0, USER_ID)
             "جاهز"
@@ -210,7 +258,7 @@ class BlackBoxVirtualEngine : VirtualEngine {
         }
     }
 
-    private fun isReady(): Boolean = attached && created
+    private fun isReady(): Boolean = attached && created && storageIsolated
 
     private companion object {
         const val TAG = "AIHAM_ENGINE"
