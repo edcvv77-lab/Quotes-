@@ -6,30 +6,42 @@ import org.junit.Test
 
 class StorageIsolationPolicyTest {
     @Test
-    fun internalGuestStorageIsAccepted() {
+    fun internalBlackBoxRootIsAccepted() {
         val dataDir = "/data/user/0/com.aiham.quotes"
-        val guest = "/data/user/0/com.aiham.quotes/files/secure-space/external-files/blackbox"
+        val blackBoxRoot = "/data/user/0/com.aiham.quotes/blackbox"
 
-        assertTrue(StorageIsolationPolicy.isInternal(dataDir, guest))
-        assertFalse(StorageIsolationPolicy.isPublicStorage(guest))
+        assertTrue(StorageIsolationPolicy.isInside(dataDir, blackBoxRoot))
     }
 
     @Test
-    fun androidDataAndSdcardAreRejectedAsPublicStorage() {
-        val dataDir = "/data/user/0/com.aiham.quotes"
-        val external = "/storage/emulated/0/Android/data/com.aiham.quotes/files/blackbox"
+    fun appScopedExternalBlackBoxRootIsAccepted() {
+        val appExternal = "/storage/emulated/0/Android/data/com.aiham.quotes/files"
+        val guestRoot = "/storage/emulated/0/Android/data/com.aiham.quotes/files/blackbox"
 
-        assertFalse(StorageIsolationPolicy.isInternal(dataDir, external))
-        assertTrue(StorageIsolationPolicy.isPublicStorage(external))
-        assertTrue(StorageIsolationPolicy.isPublicStorage("/sdcard/Android/data/com.whatsapp"))
+        assertTrue(StorageIsolationPolicy.isInside(appExternal, guestRoot))
+        assertFalse(StorageIsolationPolicy.isSharedPublicPath(guestRoot))
     }
 
     @Test
-    fun otherApplicationDataDirIsRejected() {
+    fun sharedStorageOutsideHostAppScopeIsRejected() {
+        assertTrue(
+            StorageIsolationPolicy.isSharedPublicPath(
+                "/storage/emulated/0/Download/com.whatsapp"
+            )
+        )
+        assertTrue(
+            StorageIsolationPolicy.isSharedPublicPath(
+                "/sdcard/Pictures/com.whatsapp"
+            )
+        )
+    }
+
+    @Test
+    fun anotherAppsPrivateTreeIsNotInsideQuotesScope() {
         assertFalse(
-            StorageIsolationPolicy.isInternal(
-                "/data/user/0/com.aiham.quotes",
-                "/data/user/0/com.whatsapp/files"
+            StorageIsolationPolicy.isInside(
+                "/storage/emulated/0/Android/data/com.aiham.quotes/files",
+                "/storage/emulated/0/Android/data/com.whatsapp/files"
             )
         )
     }
