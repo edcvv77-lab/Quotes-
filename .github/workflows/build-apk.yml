@@ -172,6 +172,26 @@ jobs:
           grep -F "top.niunaijun.blackbox.app.LauncherActivity" /tmp/host-manifest.txt
           grep -F "top.niunaijun.blackbox.proxy.ProxyActivity" /tmp/host-manifest.txt
 
+      - name: Reject leaked BlackBox sample permissions
+        run: |
+          set -euo pipefail
+          AAPT="$ANDROID_HOME/build-tools/30.0.3/aapt"
+          "$AAPT" dump permissions dist/Aiham-Quotes-debug.apk | tee /tmp/host-permissions.txt
+          for permission in \
+            android.permission.MANAGE_EXTERNAL_STORAGE \
+            android.permission.REQUEST_INSTALL_PACKAGES \
+            android.permission.SYSTEM_ALERT_WINDOW \
+            android.permission.PACKAGE_USAGE_STATS \
+            android.permission.INSTALL_PACKAGES \
+            android.permission.DELETE_PACKAGES \
+            android.permission.READ_LOGS \
+            com.android.launcher.permission.INSTALL_SHORTCUT; do
+            if grep -F "name='$permission'" /tmp/host-permissions.txt; then
+              echo "Forbidden inherited permission leaked into host APK: $permission"
+              exit 1
+            fi
+          done
+
       - name: Upload stable update host APK
         if: ${{ env.AIHAM_SIGNING_KEYSTORE_B64 != '' }}
         uses: actions/upload-artifact@v4
