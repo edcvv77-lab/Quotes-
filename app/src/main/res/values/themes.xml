@@ -5,9 +5,12 @@
         <item name="colorOnPrimary">@color/quotes_white</item>
         <item name="colorSecondary">@color/quotes_accent</item>
         <item name="colorOnSecondary">@color/quotes_text</item>
+        <item name="android:colorAccent">@color/quotes_accent</item>
+        <item name="android:windowBackground">@color/quotes_background</item>
         <item name="android:statusBarColor">@color/quotes_primary_dark</item>
         <item name="android:navigationBarColor">@color/quotes_primary_dark</item>
         <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar">false</item>
         <item name="android:fontFamily">sans</item>
         <item name="android:windowActionModeOverlay">true</item>
     </style>
