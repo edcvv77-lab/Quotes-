@@ -23,8 +23,8 @@
             android:paddingEnd="10dp"
             android:paddingBottom="5dp"
             android:text="اقتباس"
-            android:textColor="@color/quotes_primary"
-            android:textSize="12sp"
+            android:textColor="@color/quotes_primary_dark"
+            android:textSize="11sp"
             android:textStyle="bold" />
 
         <Space
@@ -42,38 +42,46 @@
             android:visibility="gone" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/tvQuoteText"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:gravity="start"
-        android:lineSpacingExtra="5dp"
-        android:textColor="@color/quotes_text"
-        android:textDirection="locale"
-        android:textSize="19sp" />
-
-    <View
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginBottom="8dp"
-        android:background="@color/quotes_surface_soft" />
-
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
+
+        <View
+            android:layout_width="3dp"
+            android:layout_height="match_parent"
+            android:layout_marginEnd="12dp"
+            android:background="@color/quotes_accent" />
+
+        <TextView
+            android:id="@+id/tvQuoteText"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="sans-serif"
+            android:gravity="start"
+            android:lineSpacingExtra="6dp"
+            android:textColor="@color/quotes_text"
+            android:textDirection="locale"
+            android:textSize="19sp" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="16dp"
         android:orientation="horizontal">
 
         <TextView
             android:id="@+id/actionFavorite"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
+            android:background="@drawable/bg_quote_action"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:padding="9dp"
             android:text="☆ حفظ"
             android:textColor="@color/quotes_primary"
             android:textSize="12sp"
@@ -82,53 +90,67 @@
         <TextView
             android:id="@+id/actionCopy"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginStart="7dp"
             android:layout_weight="1"
+            android:background="@drawable/bg_quote_action"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:padding="9dp"
             android:text="نسخ"
             android:textColor="@color/quotes_text_secondary"
-            android:textSize="12sp" />
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/actionShare"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginStart="7dp"
             android:layout_weight="1"
+            android:background="@drawable/bg_quote_action"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:padding="9dp"
             android:text="مشاركة"
             android:textColor="@color/quotes_text_secondary"
-            android:textSize="12sp" />
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:layout_marginTop="7dp"
+        android:orientation="horizontal">
 
         <TextView
             android:id="@+id/actionEdit"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
             android:layout_weight="1"
+            android:background="@drawable/bg_quote_action"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:padding="9dp"
             android:text="تعديل"
             android:textColor="@color/quotes_text_secondary"
-            android:textSize="12sp" />
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/actionDelete"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_marginStart="7dp"
             android:layout_weight="1"
+            android:background="@drawable/bg_quote_action_danger"
             android:clickable="true"
             android:focusable="true"
             android:gravity="center"
-            android:padding="9dp"
             android:text="حذف"
             android:textColor="@color/quotes_danger"
-            android:textSize="12sp" />
+            android:textSize="12sp"
+            android:textStyle="bold" />
     </LinearLayout>
 </LinearLayout>
