@@ -841,7 +841,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 result.message
             },
-            after = { refreshVirtualApps() }
+            after = { message -> refreshVirtualApps(completionMessage = message) }
         )
     }
 
@@ -946,6 +946,7 @@ class MainActivity : AppCompatActivity() {
 
         const val REQUEST_PICK_APK = 7700
         const val REQUEST_GUEST_PERMISSIONS = 7701
+        const val LAUNCH_SURFACE_SETTLE_MS = 350L
 
         const val STATE_PRIVATE_SPACE = "state_private_space"
         const val STATE_PENDING_APK = "state_pending_apk"
