@@ -38,3 +38,31 @@ ext {
     xVersion = "1.1.0"
     blackReflection = "1.1.2"
 }
+
+
+def blackBoxOverlayDir = file("blackbox-overrides/Bcore/src/main/java")
+
+tasks.register("applyBlackBoxOverlay") {
+    inputs.dir(blackBoxOverlayDir)
+    outputs.upToDateWhen { false }
+
+    doLast {
+        if (!blackBoxOverlayDir.isDirectory()) {
+            throw new GradleException("BlackBox overlay directory is missing")
+        }
+        copy {
+            from blackBoxOverlayDir
+            into file("BlackBox/Bcore/src/main/java")
+        }
+    }
+}
+
+gradle.projectsEvaluated {
+    if (findProject(":Bcore") != null) {
+        project(":Bcore").tasks.configureEach { task ->
+            if (task.name.startsWith("compile") && task.name.endsWith("JavaWithJavac")) {
+                task.dependsOn(rootProject.tasks.named("applyBlackBoxOverlay"))
+            }
+        }
+    }
+}

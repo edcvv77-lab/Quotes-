@@ -7,6 +7,7 @@ import android.os.Build
 import android.util.Log
 import com.aiham.privatespace.storage.StorageIsolationPolicy
 import java.io.File
+import java.util.UUID
 import top.niunaijun.blackbox.BlackBoxCore
 import top.niunaijun.blackbox.app.configuration.ClientConfiguration
 import top.niunaijun.blackbox.core.env.BEnvironment
@@ -93,45 +94,128 @@ class BlackBoxVirtualEngine : VirtualEngine {
     }
 
     override fun installHostPackage(packageName: String): EngineResult {
-        if (!isReady()) return EngineResult(false, "محرك التطبيقات الافتراضية غير جاهز.", packageName)
-        if (packageName.isBlank()) return EngineResult(false, "تعذر تحديد التطبيق المثبت.")
+        if (!isReady()) {
+            return EngineResult(false, "محرك التطبيقات الافتراضية غير جاهز.", packageName)
+        }
+        if (packageName.isBlank()) {
+            return EngineResult(false, "تعذر تحديد التطبيق المثبت.")
+        }
 
+        var clusterDir: File? = null
         return try {
-            val hostInfo = BlackBoxCore.getPackageManager().getPackageInfo(packageName, 0)
-            val splitCount = hostInfo.applicationInfo?.splitSourceDirs?.size ?: 0
+            val packageManager = BlackBoxCore.getPackageManager()
+            val hostInfo = packageManager.getPackageInfo(packageName, 0)
+            val hostApplication = hostInfo.applicationInfo
+                ?: return EngineResult(false, "تعذر قراءة ملفات التطبيق المثبت.", packageName)
+
+            val baseSource = File(hostApplication.sourceDir.orEmpty())
+            if (!baseSource.isFile) {
+                return EngineResult(false, "ملف التطبيق الأساسي غير متاح.", packageName)
+            }
+
+            val splitSources = hostApplication.splitSourceDirs.orEmpty()
+                .map(::File)
+                .filter { it.isFile }
+
+            val declaredSplitCount = hostApplication.splitSourceDirs?.size ?: 0
+            if (splitSources.size != declaredSplitCount) {
+                Log.e(
+                    GUEST_TAG,
+                    "Installed package has missing split files package=" + packageName +
+                        " declared=" + declaredSplitCount +
+                        " readable=" + splitSources.size
+                )
+                return EngineResult(false, "تعذر قراءة جميع أجزاء التطبيق المثبت.", packageName)
+            }
+
+            clusterDir = File(
+                BlackBoxCore.getContext().cacheDir,
+                "private-import-" + UUID.randomUUID().toString()
+            )
+            check(clusterDir.mkdirs()) { "Unable to create private import staging directory" }
+
+            baseSource.copyTo(File(clusterDir, "base.apk"), overwrite = true)
+            splitSources.forEachIndexed { index, source ->
+                val safeName = source.name.replace(Regex("[^A-Za-z0-9._-]"), "_")
+                source.copyTo(
+                    File(clusterDir, "split-" + index.toString().padStart(3, '0') + "-" + safeName),
+                    overwrite = true
+                )
+            }
 
             Log.i(
                 GUEST_TAG,
-                "Importing installed host package=" + packageName +
-                    " splitCount=" + splitCount +
-                    " using BlackBox system-package install path"
+                "Importing installed package by private copy package=" + packageName +
+                    " splitCount=" + declaredSplitCount +
+                    " staging=" + clusterDir.absolutePath
             )
 
-            val result = BlackBoxCore.get().installPackageAsUser(packageName, USER_ID)
+            val result = BlackBoxCore.get().installPackageAsUser(clusterDir, USER_ID)
             val installed = BlackBoxCore.get().isInstalled(packageName, USER_ID)
-
-            if (result != null && result.success && installed) {
-                Log.i(
-                    GUEST_TAG,
-                    "Installed host package import verified package=" + packageName +
-                        " splitCount=" + splitCount
-                )
-                EngineResult(true, "تم نسخ التطبيق داخل المساحة.", packageName)
-            } else {
+            if (result == null || !result.success || !installed) {
                 val detail = result?.msg ?: "BlackBox returned no error detail"
                 Log.e(
                     GUEST_TAG,
-                    "Installed host package import not verified package=" + packageName +
-                        " splitCount=" + splitCount +
+                    "Private package import failed package=" + packageName +
                         " detail=" + detail +
                         " installed=" + installed
                 )
-                EngineResult(false, "تعذر نسخ التطبيق داخل المساحة.", packageName)
+                return EngineResult(false, "تعذر نسخ التطبيق داخل المساحة.", packageName)
             }
+
+            val virtualInfo = BlackBoxCore.getBPackageManager()
+                .getApplicationInfo(packageName, 0, USER_ID)
+                ?: run {
+                    BlackBoxCore.get().uninstallPackageAsUser(packageName, USER_ID)
+                    return EngineResult(false, "تعذر التحقق من النسخة داخل المساحة.", packageName)
+                }
+
+            val privateAppRoot = BEnvironment.getAppDir(packageName).canonicalFile
+            val virtualBase = File(virtualInfo.sourceDir).canonicalFile
+            val virtualSplits = virtualInfo.splitSourceDirs.orEmpty()
+                .map { File(it).canonicalFile }
+
+            val baseIsPrivate = isInside(privateAppRoot, virtualBase) && virtualBase.isFile
+            val splitsArePrivate =
+                virtualSplits.size == declaredSplitCount &&
+                    virtualSplits.all { split -> isInside(privateAppRoot, split) && split.isFile }
+
+            if (!baseIsPrivate || !splitsArePrivate) {
+                Log.e(
+                    GUEST_TAG,
+                    "Private copy verification failed package=" + packageName +
+                        " basePrivate=" + baseIsPrivate +
+                        " expectedSplits=" + declaredSplitCount +
+                        " actualSplits=" + virtualSplits.size
+                )
+                BlackBoxCore.get().uninstallPackageAsUser(packageName, USER_ID)
+                return EngineResult(
+                    false,
+                    "تعذر تأمين نسخة التطبيق داخل التخزين الخاص.",
+                    packageName
+                )
+            }
+
+            Log.i(
+                GUEST_TAG,
+                "Private package import verified package=" + packageName +
+                    " splitCount=" + virtualSplits.size +
+                    " virtualBase=" + virtualBase.absolutePath
+            )
+            EngineResult(true, "تم نسخ التطبيق داخل المساحة.", packageName)
         } catch (t: Throwable) {
-            Log.e(GUEST_TAG, "Installed host package import failed package=" + packageName, t)
+            Log.e(GUEST_TAG, "Private installed-package import failed package=" + packageName, t)
             EngineResult(false, "تعذر نسخ التطبيق داخل المساحة.", packageName)
+        } finally {
+            clusterDir?.deleteRecursively()
         }
+    }
+
+    private fun isInside(root: File, candidate: File): Boolean {
+        val rootPath = root.path.trimEnd(File.separatorChar)
+        val candidatePath = candidate.path
+        return candidatePath == rootPath ||
+            candidatePath.startsWith(rootPath + File.separator)
     }
 
     override fun uninstallApp(packageName: String): EngineResult {
