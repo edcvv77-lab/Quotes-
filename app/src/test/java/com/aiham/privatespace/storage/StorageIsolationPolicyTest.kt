@@ -37,6 +37,26 @@ class StorageIsolationPolicyTest {
     }
 
     @Test
+    fun android11DataAliasesAreTreatedAsSamePrivateDirectory() {
+        assertTrue(
+            StorageIsolationPolicy.isInside(
+                "/data/user/0/com.aiham.quotes",
+                "/data/data/com.aiham.quotes/blackbox"
+            )
+        )
+    }
+
+    @Test
+    fun android11EmulatedStorageAliasesAreTreatedAsSameAppScope() {
+        assertTrue(
+            StorageIsolationPolicy.isInside(
+                "/storage/emulated/0/Android/data/com.aiham.quotes/files",
+                "/mnt/user/0/emulated/0/Android/data/com.aiham.quotes/files/blackbox"
+            )
+        )
+    }
+
+    @Test
     fun anotherAppsPrivateTreeIsNotInsideQuotesScope() {
         assertFalse(
             StorageIsolationPolicy.isInside(
