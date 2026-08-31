@@ -13,7 +13,7 @@ Visual language:
 - muted brass accent used sparingly;
 - large Arabic-first typography and generous spacing;
 - soft layered cards rather than default Android buttons;
-- private space uses midnight/emerald surfaces with status accents;
+- private space alone uses a Hadeel-specific blush/lavender/cream identity with rose-gold accents;
 - no neon "hacker" styling and no excessive technical labels.
 
 ## Quotes screen
@@ -90,8 +90,15 @@ Redesign:
 
 Status: **IMPLEMENTED AND BUILD-VERIFIED**
 
-Verified by GitHub Actions run **#229** on code/config commit `04d3f72df63b915466f215f4ded99d1e5ed402eb`.
+Latest verification: GitHub Actions run **#263** on code/config commit `ac455e76029c77957609a52f9d0c41e2b82c7153`.
 
 All planned phone/tablet layout resources, design-system resources and clone-picker presentation changes compile and pass the existing CI checks.
 
 Remaining acceptance is visual/runtime validation on the target Android 11 tablet. Build success is not treated as proof of target-device visual correctness or guest runtime success.
+
+
+## Hadeel private-space personalization
+
+The current private screen only is personalized for Hadeel. It uses blush pink, lavender, cream and rose-gold surfaces, a crown/name sticker, butterfly/flower/sparkle vector decorations, Hadeel guest-card signatures, matching clone-picker styling, private-only system-bar colors and subtle entrance/card motion. The Quotes home design is intentionally unchanged by this personalization.
+
+The decorative animation is cancelled when leaving the private screen. This phase does not change BlackBox behavior, permissions, package IDs or Android API targets.
