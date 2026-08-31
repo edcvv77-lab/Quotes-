@@ -1,10 +1,41 @@
 <?xml version="1.0" encoding="utf-8"?>
 <FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_private_root"
-    android:padding="26dp">
+    android:padding="24dp">
+
+    <ImageView
+        android:id="@+id/hadeelButterfly"
+        android:layout_width="76dp"
+        android:layout_height="76dp"
+        android:layout_gravity="start|top"
+        android:layout_marginStart="22dp"
+        android:layout_marginTop="72dp"
+        android:alpha="0.85"
+        android:contentDescription="فراشة"
+        android:src="@drawable/ic_hadeel_butterfly" />
+
+    <ImageView
+        android:id="@+id/hadeelSparkles"
+        android:layout_width="64dp"
+        android:layout_height="64dp"
+        android:layout_gravity="end|top"
+        android:layout_marginTop="34dp"
+        android:layout_marginEnd="34dp"
+        android:alpha="0.75"
+        android:contentDescription="لمعات"
+        android:src="@drawable/ic_hadeel_sparkles" />
+
+    <ImageView
+        android:layout_width="74dp"
+        android:layout_height="74dp"
+        android:layout_gravity="end|bottom"
+        android:layout_marginEnd="20dp"
+        android:layout_marginBottom="98dp"
+        android:alpha="0.34"
+        android:contentDescription="زهرة"
+        android:src="@drawable/ic_hadeel_flower" />
 
     <LinearLayout
         android:layout_width="860dp"
@@ -13,136 +44,163 @@
         android:orientation="vertical">
 
         <LinearLayout
+            android:id="@+id/privateHeader"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:background="@drawable/bg_private_header"
-            android:gravity="center_vertical"
-            android:orientation="horizontal"
-            android:padding="22dp">
+            android:gravity="center"
+            android:orientation="vertical"
+            android:paddingTop="4dp"
+            android:paddingBottom="7dp">
 
-            <FrameLayout
-                android:layout_width="60dp"
-                android:layout_height="60dp"
-                android:background="@drawable/bg_private_chip">
-
-                <ImageView
-                    android:layout_width="34dp"
-                    android:layout_height="34dp"
-                    android:layout_gravity="center"
-                    android:contentDescription="مساحة آمنة"
-                    android:src="@drawable/ic_shield_check_24" />
-            </FrameLayout>
-
-            <LinearLayout
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="16dp"
-                android:layout_weight="1"
-                android:orientation="vertical">
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="المساحة الخاصة"
-                    android:textColor="@color/private_text"
-                    android:textSize="34sp"
-                    android:textStyle="bold" />
-
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="3dp"
-                    android:text="تطبيقات منفصلة داخل اقتباسات"
-                    android:textColor="#B8C7D1"
-                    android:textSize="16sp" />
-            </LinearLayout>
+            <ImageView
+                android:layout_width="48dp"
+                android:layout_height="34dp"
+                android:contentDescription="تاج"
+                android:src="@drawable/ic_hadeel_crown" />
 
             <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:text="مساحة هديل الخاصة"
+                android:textColor="@color/private_text"
+                android:textSize="37sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/privateNameSticker"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:background="@drawable/bg_private_chip"
-                android:paddingStart="14dp"
-                android:paddingTop="7dp"
-                android:paddingEnd="14dp"
-                android:paddingBottom="7dp"
-                android:text="Android 11"
-                android:textColor="@color/private_success"
-                android:textSize="12sp"
+                android:layout_marginTop="5dp"
+                android:background="@drawable/bg_hadeel_name_sticker"
+                android:text="✨ هديل ✨"
+                android:textColor="@color/private_primary"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="7dp"
+                android:gravity="center"
+                android:text="تطبيقات منفصلة داخل اقتباسات"
+                android:textColor="@color/private_muted"
+                android:textSize="15sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/privateStatusCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:background="@drawable/bg_private_status"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="18dp"
+            android:paddingTop="13dp"
+            android:paddingEnd="18dp"
+            android:paddingBottom="13dp">
+
+            <ImageView
+                android:layout_width="34dp"
+                android:layout_height="34dp"
+                android:contentDescription="حالة المساحة"
+                android:src="@drawable/ic_hadeel_shield" />
+
+            <TextView
+                android:id="@+id/tvPrivateStatus"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="13dp"
+                android:layout_weight="1"
+                android:lineSpacingExtra="3dp"
+                android:text="جاري التحقق..."
+                android:textColor="@color/private_text"
+                android:textSize="14sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/privateActionRow"
+            android:layout_width="match_parent"
+            android:layout_height="58dp"
+            android:layout_marginTop="11dp"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/btnCloneInstalledApp"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:background="@drawable/bg_hadeel_clone_button"
+                android:backgroundTint="@null"
+                android:drawableStart="@drawable/ic_hadeel_clone"
+                android:drawablePadding="9dp"
+                android:gravity="center"
+                android:minHeight="0dp"
+                android:stateListAnimator="@null"
+                android:text="نسخ تطبيق"
+                android:textAllCaps="false"
+                android:textColor="@color/private_text"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <Button
+                android:id="@+id/btnPickApk"
+                android:layout_width="0dp"
+                android:layout_height="match_parent"
+                android:layout_marginStart="10dp"
+                android:layout_weight="1"
+                android:background="@drawable/bg_hadeel_apk_button"
+                android:backgroundTint="@null"
+                android:drawableStart="@drawable/ic_hadeel_apk"
+                android:drawablePadding="9dp"
+                android:gravity="center"
+                android:minHeight="0dp"
+                android:stateListAnimator="@null"
+                android:text="إضافة APK"
+                android:textAllCaps="false"
+                android:textColor="@android:color/white"
+                android:textSize="16sp"
                 android:textStyle="bold" />
         </LinearLayout>
 
-        <TextView
-            android:id="@+id/tvPrivateStatus"
+        <Button
+            android:id="@+id/btnRefreshApps"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:background="@drawable/bg_private_status"
-            android:lineSpacingExtra="3dp"
-            android:paddingStart="18dp"
-            android:paddingTop="14dp"
-            android:paddingEnd="16dp"
-            android:paddingBottom="14dp"
-            android:text="جاري التحقق..."
-            android:textColor="#D9E3E8"
-            android:textSize="15sp" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_marginTop="12dp"
-            android:orientation="horizontal">
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnCloneInstalledApp"
-                style="@style/Widget.Aiham.PrivatePrimaryButton"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="1.6"
-                android:text="نسخ تطبيق من الجهاز"
-                app:icon="@drawable/ic_clone_24"
-                app:iconGravity="textStart" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnPickApk"
-                style="@style/Widget.Aiham.PrivateSecondaryButton"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_marginStart="10dp"
-                android:layout_weight="1"
-                android:text="إضافة APK"
-                app:icon="@drawable/ic_apk_24"
-                app:iconGravity="textStart" />
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnRefreshApps"
-                style="@style/Widget.Aiham.PrivateSecondaryButton"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_marginStart="10dp"
-                android:layout_weight="0.9"
-                android:text="تحديث"
-                app:icon="@drawable/ic_refresh_24"
-                app:iconGravity="textStart" />
-        </LinearLayout>
+            android:layout_height="56dp"
+            android:layout_marginTop="9dp"
+            android:background="@drawable/bg_hadeel_refresh_button"
+            android:backgroundTint="@null"
+            android:drawableStart="@drawable/ic_hadeel_refresh"
+            android:drawablePadding="10dp"
+            android:gravity="center"
+            android:minHeight="0dp"
+            android:stateListAnimator="@null"
+            android:text="تحديث التطبيقات"
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
+            android:layout_marginTop="13dp"
             android:gravity="center_vertical"
             android:orientation="horizontal">
 
-            <View
-                android:layout_width="8dp"
-                android:layout_height="8dp"
-                android:background="@drawable/bg_private_chip" />
+            <ImageView
+                android:layout_width="28dp"
+                android:layout_height="20dp"
+                android:contentDescription="قلب"
+                android:src="@drawable/ic_hadeel_heart" />
 
             <TextView
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="10dp"
+                android:layout_marginStart="7dp"
                 android:layout_weight="1"
-                android:text="التطبيقات داخل المساحة"
+                android:text="تطبيقات هديل"
                 android:textColor="@color/private_text"
                 android:textSize="16sp"
                 android:textStyle="bold" />
@@ -156,12 +214,13 @@
         </LinearLayout>
 
         <FrameLayout
+            android:id="@+id/privateAppsPanel"
             android:layout_width="match_parent"
             android:layout_height="0dp"
             android:layout_marginTop="8dp"
             android:layout_weight="1"
             android:background="@drawable/bg_private_panel"
-            android:padding="12dp">
+            android:padding="10dp">
 
             <ScrollView
                 android:layout_width="match_parent"
@@ -180,18 +239,22 @@
             </ScrollView>
         </FrameLayout>
 
-        <com.google.android.material.button.MaterialButton
+        <Button
             android:id="@+id/btnBack"
-            style="@style/Widget.Aiham.PrivateSecondaryButton"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="58dp"
             android:layout_marginTop="10dp"
-            android:backgroundTint="#0B1621"
+            android:background="@drawable/bg_private_lock"
+            android:backgroundTint="@null"
+            android:drawableStart="@drawable/ic_hadeel_lock"
+            android:drawablePadding="10dp"
+            android:gravity="center"
+            android:minHeight="0dp"
+            android:stateListAnimator="@null"
             android:text="قفل والعودة للاقتباسات"
-            android:textColor="@color/private_muted"
-            app:icon="@drawable/ic_lock_24"
-            app:iconGravity="textStart"
-            app:iconTint="@color/private_muted"
-            app:strokeColor="#335064" />
+            android:textAllCaps="false"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold" />
     </LinearLayout>
 </FrameLayout>
