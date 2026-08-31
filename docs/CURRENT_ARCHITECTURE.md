@@ -182,6 +182,13 @@ Reusable rows/cards:
 - `dialog_installed_app_picker.xml`
 - `item_installed_app_candidate.xml`
 
+Current visual ownership:
+- the public Quotes screen keeps the warm editorial evergreen/brass identity;
+- the private-space screen alone is personalized for **Hadeel** with blush pink, lavender, cream and rose-gold accents;
+- Hadeel-specific butterflies, flowers, sparkles, crown/name sticker, guest-card signature and subtle motion live only in private-space resources/logic;
+- entering private space temporarily changes status/navigation bar colors, and returning to Quotes restores the Quotes system-bar colors;
+- this personalization is visual only and does not alter BlackBox, package IDs, permissions or Android API targets.
+
 Current weakness: `MainActivity` is too large and contains UI rendering, async thread orchestration, quote screen state, permission continuation and private-space screen state. Do not perform a large architectural split while Android 11 runtime acceptance is unresolved. After runtime acceptance, extract screen/controller classes behind the existing behavior.
 
 ## 8. Tests and proof levels
