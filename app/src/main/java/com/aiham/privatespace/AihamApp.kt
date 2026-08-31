@@ -3,6 +3,7 @@ package com.aiham.quotes
 import android.app.Application
 import android.content.Context
 import android.util.Log
+import com.aiham.privatespace.diagnostics.VirtualCrashReporter
 import com.aiham.privatespace.engine.BlackBoxVirtualEngine
 
 class AihamApp : Application() {
@@ -13,6 +14,8 @@ class AihamApp : Application() {
         val result = virtualEngine.initialize(this)
         if (!result.success) {
             Log.e(TAG, "BlackBox attach failed: " + result.message)
+        } else {
+            VirtualCrashReporter.install(this)
         }
     }
 
