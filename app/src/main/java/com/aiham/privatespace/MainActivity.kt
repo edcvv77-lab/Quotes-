@@ -1,5 +1,7 @@
 package com.aiham.quotes
 
+import android.animation.AnimatorSet
+import android.animation.ObjectAnimator
 import android.app.AlertDialog
 import android.content.ClipData
 import android.content.ClipboardManager
@@ -18,6 +20,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
+import android.view.animation.DecelerateInterpolator
 import android.widget.BaseAdapter
 import android.widget.Button
 import android.widget.EditText
@@ -61,6 +64,7 @@ class MainActivity : AppCompatActivity() {
     private var inPrivateSpace = false
     private var favoritesOnly = false
     @Volatile private var activityResumed = false
+    private var privateDecorAnimator: AnimatorSet? = null
 
     private val defaultQuotes = listOf(
         "الأفعال الصغيرة المتكررة تصنع نتائج كبيرة.",
@@ -95,6 +99,12 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
     }
 
+    override fun onDestroy() {
+        privateDecorAnimator?.cancel()
+        privateDecorAnimator = null
+        super.onDestroy()
+    }
+
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putBoolean(STATE_PRIVATE_SPACE, inPrivateSpace)
         pendingGuestApk?.absolutePath?.let { outState.putString(STATE_PENDING_APK, it) }
@@ -115,6 +125,10 @@ class MainActivity : AppCompatActivity() {
     private fun showQuotesHome() {
         inPrivateSpace = false
         favoritesOnly = false
+        privateDecorAnimator?.cancel()
+        privateDecorAnimator = null
+        window.statusBarColor = getColorCompat(R.color.quotes_primary_dark)
+        window.navigationBarColor = getColorCompat(R.color.quotes_primary_dark)
         setContentView(R.layout.activity_main)
 
         tvQuoteCount = findViewById(R.id.tvQuoteCount)
@@ -334,6 +348,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun enterPrivateSpace() {
         inPrivateSpace = true
+        window.statusBarColor = getColorCompat(R.color.private_status_bar)
+        window.navigationBarColor = getColorCompat(R.color.private_nav_bar)
         setContentView(R.layout.activity_private_space)
 
         tvPrivateStatus = findViewById(R.id.tvPrivateStatus)
@@ -344,8 +360,103 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnRefreshApps).setOnClickListener { refreshVirtualApps(userInitiated = true) }
         findViewById<Button>(R.id.btnBack).setOnClickListener { showQuotesHome() }
 
+        animatePrivateSpaceEntrance()
         refreshPrivateStatus()
         refreshVirtualApps()
+    }
+
+    private fun animatePrivateSpaceEntrance() {
+        val rise = (14 * resources.displayMetrics.density)
+        val ids = intArrayOf(
+            R.id.privateHeader,
+            R.id.privateStatusCard,
+            R.id.privateActionRow,
+            R.id.btnRefreshApps,
+            R.id.privateAppsPanel,
+            R.id.btnBack
+        )
+
+        ids.forEachIndexed { index, id ->
+            findViewById<View>(id)?.apply {
+                alpha = 0f
+                translationY = rise
+                animate()
+                    .alpha(1f)
+                    .translationY(0f)
+                    .setStartDelay(index * 55L)
+                    .setDuration(300L)
+                    .setInterpolator(DecelerateInterpolator())
+                    .start()
+            }
+        }
+
+        privateDecorAnimator?.cancel()
+
+        val butterfly = findViewById<View>(R.id.hadeelButterfly)
+        val sparkles = findViewById<View>(R.id.hadeelSparkles)
+        val floatDistance = 5 * resources.displayMetrics.density
+
+        val butterflyFloat = ObjectAnimator.ofFloat(
+            butterfly,
+            View.TRANSLATION_Y,
+            0f,
+            -floatDistance
+        ).apply {
+            duration = 1900L
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+        }
+        val butterflyGlow = ObjectAnimator.ofFloat(
+            butterfly,
+            View.ALPHA,
+            0.62f,
+            0.92f
+        ).apply {
+            duration = 1700L
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+        }
+        val sparkleGlow = ObjectAnimator.ofFloat(
+            sparkles,
+            View.ALPHA,
+            0.38f,
+            0.88f
+        ).apply {
+            duration = 1350L
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+        }
+        val sparkleScaleX = ObjectAnimator.ofFloat(
+            sparkles,
+            View.SCALE_X,
+            0.92f,
+            1.08f
+        ).apply {
+            duration = 1350L
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+        }
+        val sparkleScaleY = ObjectAnimator.ofFloat(
+            sparkles,
+            View.SCALE_Y,
+            0.92f,
+            1.08f
+        ).apply {
+            duration = 1350L
+            repeatCount = ObjectAnimator.INFINITE
+            repeatMode = ObjectAnimator.REVERSE
+        }
+
+        privateDecorAnimator = AnimatorSet().apply {
+            playTogether(
+                butterflyFloat,
+                butterflyGlow,
+                sparkleGlow,
+                sparkleScaleX,
+                sparkleScaleY
+            )
+            start()
+        }
     }
 
     private fun openApkPicker() {
@@ -754,10 +865,10 @@ class MainActivity : AppCompatActivity() {
 
         if (packages.isEmpty()) {
             val empty = TextView(this).apply {
-                text = "لا توجد تطبيقات داخل المساحة بعد.\nأضف APK أو انسخ تطبيقًا مثبتًا من الجهاز."
+                text = "مساحة هديل جاهزة ✨\nانسخي تطبيقًا من الجهاز أو أضيفي ملف APK."
                 textSize = 15f
                 gravity = android.view.Gravity.CENTER
-                setTextColor(0xFF94A3B8.toInt())
+                setTextColor(getColorCompat(R.color.private_muted))
                 setPadding(20, 48, 20, 48)
             }
             val emptyParams = GridLayout.LayoutParams().apply {
@@ -772,7 +883,7 @@ class MainActivity : AppCompatActivity() {
         val columns = appsContainer.columnCount.coerceAtLeast(1)
         val margin = (8 * resources.displayMetrics.density).toInt()
 
-        packages.forEach { packageName ->
+        packages.forEachIndexed { index, packageName ->
             val record = guestAppCatalog.get(packageName)
             val tile = inflater.inflate(R.layout.item_guest_app, appsContainer, false)
 
@@ -802,7 +913,18 @@ class MainActivity : AppCompatActivity() {
                 setMargins(margin, margin, margin, margin)
             }
 
+            tile.alpha = 0f
+            tile.scaleX = 0.94f
+            tile.scaleY = 0.94f
             appsContainer.addView(tile, params)
+            tile.animate()
+                .alpha(1f)
+                .scaleX(1f)
+                .scaleY(1f)
+                .setStartDelay(index.coerceAtMost(8) * 45L)
+                .setDuration(240L)
+                .setInterpolator(DecelerateInterpolator())
+                .start()
         }
     }
 
