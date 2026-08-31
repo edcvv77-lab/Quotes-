@@ -1,16 +1,32 @@
 <resources>
-    <color name="ic_launcher_background">#0F172A</color>
+    <color name="ic_launcher_background">#0D3532</color>
 
-    <color name="quotes_background">#F5F2EA</color>
-    <color name="quotes_surface">#FFFDF8</color>
-    <color name="quotes_surface_soft">#EEE9DE</color>
-    <color name="quotes_primary">#174C49</color>
-    <color name="quotes_primary_dark">#103B39</color>
-    <color name="quotes_accent">#B9894A</color>
-    <color name="quotes_accent_soft">#F1E2C9</color>
-    <color name="quotes_text">#1D2927</color>
-    <color name="quotes_text_secondary">#66736F</color>
-    <color name="quotes_border">#DDD7CC</color>
-    <color name="quotes_danger">#A8433D</color>
+    <!-- Quotes: warm editorial palette -->
+    <color name="quotes_background">#F3EFE7</color>
+    <color name="quotes_surface">#FFFCF7</color>
+    <color name="quotes_surface_soft">#F7F1E7</color>
+    <color name="quotes_primary">#174C47</color>
+    <color name="quotes_primary_dark">#0D3532</color>
+    <color name="quotes_primary_soft">#DCEAE6</color>
+    <color name="quotes_accent">#B78445</color>
+    <color name="quotes_accent_soft">#F2E3CD</color>
+    <color name="quotes_text">#192522</color>
+    <color name="quotes_text_secondary">#68746F</color>
+    <color name="quotes_border">#E1D8CA</color>
+    <color name="quotes_danger">#A24940</color>
     <color name="quotes_white">#FFFFFF</color>
+
+    <!-- Private space: midnight + emerald palette -->
+    <color name="private_background">#071019</color>
+    <color name="private_background_2">#0A1721</color>
+    <color name="private_surface">#101C29</color>
+    <color name="private_surface_2">#142433</color>
+    <color name="private_border">#263A4B</color>
+    <color name="private_primary">#1C6B5F</color>
+    <color name="private_primary_bright">#43B69D</color>
+    <color name="private_accent">#D1A55C</color>
+    <color name="private_text">#F4F7F8</color>
+    <color name="private_muted">#91A3B3</color>
+    <color name="private_success">#69D0AA</color>
+    <color name="private_danger">#E07B6C</color>
 </resources>
