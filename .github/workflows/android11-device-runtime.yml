@@ -1,0 +1,88 @@
+name: Android 11 Physical Runtime Acceptance
+
+on:
+  workflow_dispatch:
+
+jobs:
+  runtime-api30-device:
+    name: Android 11 ARM physical runtime
+    runs-on: [self-hosted, android, arm64, api30]
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout repository and pinned BlackBox
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 0
+
+      - name: Verify pinned BlackBox revision
+        run: |
+          test "$(git -C BlackBox rev-parse HEAD)" = "823ffcbe8b94055ba68767c7422b4d174550fa86"
+
+      - name: Set up Java 17
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: gradle
+
+      - name: Set up Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install required Android SDK packages
+        run: |
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager "platform-tools" "platforms;android-33" "build-tools;30.0.3" "ndk;21.0.6113669"
+
+      - name: Verify connected Android 11 ARM device
+        run: |
+          set -euo pipefail
+          adb wait-for-device
+          test "$(adb shell getprop ro.build.version.sdk | tr -d '\r')" = "30"
+          case "$(adb shell getprop ro.product.cpu.abi | tr -d '\r')" in
+            arm64-v8a|armeabi-v7a) ;;
+            *) echo "Unsupported device ABI"; exit 1 ;;
+          esac
+
+      - name: Build host and runtime-test APKs
+        run: |
+          chmod +x ./gradlew
+          ./gradlew :app:testDebugUnitTest :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+
+      - name: Run BlackBox device acceptance
+        run: |
+          set -euo pipefail
+          adb shell pm uninstall com.aiham.virtualtest >/dev/null 2>&1 || true
+          if adb shell pm list packages | grep -q '^package:com.aiham.virtualtest$'; then
+            echo "Guest exists as a normal host package before test"
+            exit 1
+          fi
+
+          adb install -r app/build/outputs/apk/debug/app-debug.apk
+          adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+          adb logcat -c
+
+          adb shell am instrument -w -r com.aiham.quotes.test/androidx.test.runner.AndroidJUnitRunner | tee instrumentation.txt
+          grep -q '^OK (1 test)' instrumentation.txt
+
+          if adb shell pm list packages | grep -q '^package:com.aiham.virtualtest$'; then
+            echo "Guest leaked into Android host PackageManager"
+            exit 1
+          fi
+
+          adb logcat -d -v time > logcat.txt
+          grep -q 'AIHAM_GUEST_TEST.*Guest MainActivity onResume' logcat.txt
+          grep -q 'AIHAM_ENGINE.*Storage safety.*internalRoot=true.*appScopedExternal=true' logcat.txt
+
+      - name: Upload runtime evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Android-11-physical-runtime-evidence
+          path: |
+            instrumentation.txt
+            logcat.txt
+          if-no-files-found: warn

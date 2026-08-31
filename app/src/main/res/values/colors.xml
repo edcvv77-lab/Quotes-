@@ -1,3 +1,16 @@
 <resources>
     <color name="ic_launcher_background">#0F172A</color>
+
+    <color name="quotes_background">#F5F2EA</color>
+    <color name="quotes_surface">#FFFDF8</color>
+    <color name="quotes_surface_soft">#EEE9DE</color>
+    <color name="quotes_primary">#174C49</color>
+    <color name="quotes_primary_dark">#103B39</color>
+    <color name="quotes_accent">#B9894A</color>
+    <color name="quotes_accent_soft">#F1E2C9</color>
+    <color name="quotes_text">#1D2927</color>
+    <color name="quotes_text_secondary">#66736F</color>
+    <color name="quotes_border">#DDD7CC</color>
+    <color name="quotes_danger">#A8433D</color>
+    <color name="quotes_white">#FFFFFF</color>
 </resources>

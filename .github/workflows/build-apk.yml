@@ -3,17 +3,41 @@ name: Build Aiham Private Space
 on:
   workflow_dispatch:
   push:
+    branches: [main, phase2-runtime-fix]
+  pull_request:
     branches: [main]
+
+concurrency:
+  group: quotes-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-22.04
+    env:
+      AIHAM_SIGNING_KEYSTORE_B64: ${{ secrets.AIHAM_SIGNING_KEYSTORE_B64 }}
+      AIHAM_SIGNING_STORE_FILE: ${{ github.workspace }}/.signing/Aiham-Quotes-update-key.jks
+      AIHAM_SIGNING_STORE_PASSWORD: ${{ secrets.AIHAM_SIGNING_STORE_PASSWORD }}
+
     steps:
       - name: Checkout repository and submodules
         uses: actions/checkout@v4
         with:
           submodules: recursive
           fetch-depth: 0
+
+      - name: Verify pinned BlackBox revision
+        run: |
+          test "$(git -C BlackBox rev-parse HEAD)" = "823ffcbe8b94055ba68767c7422b4d174550fa86"
+
+      - name: Set monotonic Android app version
+        run: |
+          set -euo pipefail
+          VERSION_CODE="$(git rev-list --count HEAD)"
+          test "$VERSION_CODE" -gt 1
+          echo "AIHAM_VERSION_CODE=$VERSION_CODE" >> "$GITHUB_ENV"
+          echo "AIHAM_VERSION_NAME=1.0.$VERSION_CODE" >> "$GITHUB_ENV"
+
 
       - name: Set up Java 17
         uses: actions/setup-java@v5
@@ -30,31 +54,104 @@ jobs:
           yes | sdkmanager --licenses >/dev/null || true
           sdkmanager "platform-tools" "platforms;android-33" "build-tools;30.0.3" "ndk;21.0.6113669"
 
+      - name: Prepare stable update signing key
+        if: ${{ env.AIHAM_SIGNING_KEYSTORE_B64 != '' }}
+        run: |
+          set -euo pipefail
+          mkdir -p .signing
+          printf '%s' "$AIHAM_SIGNING_KEYSTORE_B64" | base64 --decode > "$AIHAM_SIGNING_STORE_FILE"
+          test -s "$AIHAM_SIGNING_STORE_FILE"
+          chmod 600 "$AIHAM_SIGNING_STORE_FILE"
+
       - name: Make Gradle executable
         run: chmod +x ./gradlew
 
-      - name: Run project unit tests
-        run: ./gradlew :app:testDebugUnitTest :AihamVirtualTest:testDebugUnitTest
+      - name: Run real app unit tests
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
 
-      - name: Build debug APKs
-        run: ./gradlew assembleDebug
+      - name: Verify unit test report exists
+        run: |
+          test -n "$(find app/build/test-results/testDebugUnitTest -name 'TEST-*.xml' -print -quit)"
 
-      - name: Verify generated APKs
+      - name: Build guest, host, and device-test APKs
+        run: ./gradlew :AihamVirtualTest:assembleDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
+
+      - name: Verify embedded guest matches current guest build
         run: |
           test -s app/build/outputs/apk/debug/app-debug.apk
           test -s AihamVirtualTest/build/outputs/apk/debug/AihamVirtualTest-debug.apk
-          ls -lh app/build/outputs/apk/debug/app-debug.apk AihamVirtualTest/build/outputs/apk/debug/AihamVirtualTest-debug.apk
+          unzip -p app/build/outputs/apk/debug/app-debug.apk assets/AihamVirtualTest-debug.apk > /tmp/embedded-guest.apk
+          cmp /tmp/embedded-guest.apk AihamVirtualTest/build/outputs/apk/debug/AihamVirtualTest-debug.apk
 
-      - name: Upload host APK
+      - name: Prepare deterministic artifact names
+        run: |
+          mkdir -p dist
+          cp app/build/outputs/apk/debug/app-debug.apk dist/Aiham-Quotes-debug.apk
+          cp AihamVirtualTest/build/outputs/apk/debug/AihamVirtualTest-debug.apk dist/AihamVirtualTest-debug.apk
+          cp app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk dist/Aiham-Quotes-runtime-tests.apk
+          test -s dist/Aiham-Quotes-debug.apk
+          test -s dist/AihamVirtualTest-debug.apk
+          test -s dist/Aiham-Quotes-runtime-tests.apk
+          sha256sum dist/*.apk
+
+      - name: Verify stable update signature when configured
+        if: ${{ env.AIHAM_SIGNING_KEYSTORE_B64 != '' }}
+        run: |
+          set -euo pipefail
+          APKSIGNER="$ANDROID_HOME/build-tools/30.0.3/apksigner"
+          "$APKSIGNER" verify --verbose --print-certs dist/Aiham-Quotes-debug.apk | tee /tmp/host-signing.txt
+          grep -F "Verified using v1 scheme (JAR signing): true" /tmp/host-signing.txt
+          grep -F "Verified using v2 scheme (APK Signature Scheme v2): true" /tmp/host-signing.txt
+          grep -F "Signer #1 certificate SHA-256 digest: 30bc129e7ba9851986fb52d9948c0a358d690e3058e20a6ca561db3eb23356f5" /tmp/host-signing.txt
+          "$ANDROID_HOME/build-tools/30.0.3/zipalign" -c -p 4 dist/Aiham-Quotes-debug.apk
+          unzip -lv dist/Aiham-Quotes-debug.apk resources.arsc | tee /tmp/resources-entry.txt
+          grep -F "Stored" /tmp/resources-entry.txt
+
+      - name: Warn when stable signing is not configured
+        if: ${{ env.AIHAM_SIGNING_KEYSTORE_B64 == '' }}
+        run: |
+          echo "::warning::Stable Aiham update signing secrets are not configured; this CI artifact uses the runner debug key and is not suitable for long-term in-place updates."
+
+      - name: Verify final APK metadata and merged BlackBox manifest
+        run: |
+          AAPT="$ANDROID_HOME/build-tools/30.0.3/aapt"
+          "$AAPT" dump badging dist/Aiham-Quotes-debug.apk | tee /tmp/host-badging.txt
+          "$AAPT" dump badging dist/AihamVirtualTest-debug.apk | tee /tmp/guest-badging.txt
+          grep -F "package: name='com.aiham.quotes'" /tmp/host-badging.txt
+          grep -F "sdkVersion:'21'" /tmp/host-badging.txt
+          grep -F "targetSdkVersion:'30'" /tmp/host-badging.txt
+          grep -F "package: name='com.aiham.virtualtest'" /tmp/guest-badging.txt
+          grep -F "targetSdkVersion:'30'" /tmp/guest-badging.txt
+          "$AAPT" dump xmltree dist/Aiham-Quotes-debug.apk AndroidManifest.xml > /tmp/host-manifest.txt
+          grep -F "top.niunaijun.blackbox.app.LauncherActivity" /tmp/host-manifest.txt
+          grep -F "top.niunaijun.blackbox.proxy.ProxyActivity" /tmp/host-manifest.txt
+
+      - name: Upload stable update host APK
+        if: ${{ env.AIHAM_SIGNING_KEYSTORE_B64 != '' }}
         uses: actions/upload-artifact@v4
         with:
-          name: Aiham-Quotes-debug
-          path: app/build/outputs/apk/debug/app-debug.apk
+          name: Aiham-Quotes-update
+          path: dist/Aiham-Quotes-debug.apk
           if-no-files-found: error
 
-      - name: Upload virtual test APK
+      - name: Upload CI-only host APK
+        if: ${{ env.AIHAM_SIGNING_KEYSTORE_B64 == '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aiham-Quotes-ci-debug-NOT-FOR-UPDATES
+          path: dist/Aiham-Quotes-debug.apk
+          if-no-files-found: error
+
+      - name: Upload guest test APK
         uses: actions/upload-artifact@v4
         with:
           name: AihamVirtualTest-debug
-          path: AihamVirtualTest/build/outputs/apk/debug/AihamVirtualTest-debug.apk
+          path: dist/AihamVirtualTest-debug.apk
+          if-no-files-found: error
+
+      - name: Upload Android runtime tests
+        uses: actions/upload-artifact@v4
+        with:
+          name: Aiham-Quotes-runtime-tests
+          path: dist/Aiham-Quotes-runtime-tests.apk
           if-no-files-found: error

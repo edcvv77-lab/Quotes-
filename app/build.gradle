@@ -3,6 +3,14 @@ plugins {
     id 'kotlin-android'
 }
 
+def aihamVersionCode = (System.getenv("AIHAM_VERSION_CODE") ?: "1").toInteger()
+def aihamVersionName = System.getenv("AIHAM_VERSION_NAME") ?: "1.0"
+def signingStoreFile = System.getenv("AIHAM_SIGNING_STORE_FILE")
+def signingStorePassword = System.getenv("AIHAM_SIGNING_STORE_PASSWORD")
+def signingKeyAlias = "aiham_quotes_update"
+def signingKeyPassword = signingStorePassword
+def hasAihamSigning = signingStoreFile && signingStorePassword
+
 android {
     namespace 'com.aiham.quotes'
     compileSdk 33
@@ -11,20 +19,38 @@ android {
         applicationId "com.aiham.quotes"
         minSdk 21
         targetSdk 30
-        versionCode 1
-        versionName "1.0"
+        versionCode aihamVersionCode
+        versionName aihamVersionName
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a'
         }
     }
 
+    signingConfigs {
+        if (hasAihamSigning) {
+            aihamUpdate {
+                storeFile file(signingStoreFile)
+                storePassword signingStorePassword
+                keyAlias signingKeyAlias
+                keyPassword signingKeyPassword
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasAihamSigning) {
+                signingConfig signingConfigs.aihamUpdate
+            }
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         debug {
             debuggable true
+            if (hasAihamSigning) {
+                signingConfig signingConfigs.aihamUpdate
+            }
         }
     }
 
@@ -36,9 +62,19 @@ android {
     kotlinOptions {
         jvmTarget = '11'
     }
+
+    sourceSets {
+        main {
+            assets.srcDir("$buildDir/generated/guestAssets")
+        }
+    }
 }
 
 dependencies {
+    testImplementation 'junit:junit:4.13.2'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.5'
+    androidTestImplementation 'androidx.test:core:1.5.0'
+    androidTestImplementation 'androidx.test:runner:1.5.2'
     implementation 'androidx.core:core-ktx:1.9.0'
     implementation 'androidx.appcompat:appcompat:1.6.1'
     implementation 'com.google.android.material:material:1.8.0'
@@ -46,9 +82,10 @@ dependencies {
     implementation project(':Bcore')
 }
 
-task copyTestApk(type: Copy) {
-    from project(':AihamVirtualTest').buildDir.absolutePath + '/outputs/apk/debug/AihamVirtualTest-debug.apk'
-    into 'src/main/assets'
+tasks.register('prepareGuestApk', Copy) {
+    dependsOn(':AihamVirtualTest:assembleDebug')
+    from(project(':AihamVirtualTest').buildDir.absolutePath + '/outputs/apk/debug/AihamVirtualTest-debug.apk')
+    into(layout.buildDirectory.dir('generated/guestAssets'))
 }
-copyTestApk.dependsOn(':AihamVirtualTest:assembleDebug')
-preBuild.dependsOn(copyTestApk)
+
+preBuild.dependsOn(tasks.named('prepareGuestApk'))

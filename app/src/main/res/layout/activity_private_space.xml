@@ -3,55 +3,93 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="20dp"
-    android:background="#0F172A">
+    android:padding="18dp"
+    android:background="#0B1220">
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="المساحة الخاصة"
         android:textColor="#FFFFFF"
-        android:textSize="26sp"
+        android:textSize="28sp"
         android:textStyle="bold"
-        android:gravity="center"
-        android:paddingBottom="8dp" />
+        android:gravity="center" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="تطبيقات منفصلة داخل اقتباسات"
+        android:textColor="#94A3B8"
+        android:textSize="14sp"
+        android:gravity="center" />
 
     <TextView
         android:id="@+id/tvPrivateStatus"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="الحالة: جاري التحقق..."
+        android:layout_marginTop="14dp"
+        android:background="@drawable/bg_secure_app_tile"
+        android:text="جاري التحقق..."
         android:textColor="#CBD5E1"
         android:textSize="14sp"
         android:padding="12dp" />
 
-    <Button
-        android:id="@+id/btnInstallApk"
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="تثبيت التطبيق التجريبي" />
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnPickApk"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="إضافة APK" />
+
+        <Button
+            android:id="@+id/btnCloneInstalledApp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="8dp"
+            android:text="نسخ تطبيق" />
+    </LinearLayout>
 
     <Button
-        android:id="@+id/btnListApps"
+        android:id="@+id/btnRefreshApps"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="عرض التطبيقات المعزولة" />
+        android:text="تحديث التطبيقات" />
 
-    <Button
-        android:id="@+id/btnLaunchApp"
+    <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="تشغيل التطبيق التجريبي" />
+        android:text="اضغط على التطبيق لتشغيله، واضغط مطولًا للإدارة."
+        android:textColor="#64748B"
+        android:textSize="12sp"
+        android:paddingTop="4dp"
+        android:paddingBottom="8dp" />
 
-    <Button
-        android:id="@+id/btnUninstallApp"
+    <ScrollView
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="إزالة التطبيق التجريبي" />
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <GridLayout
+            android:id="@+id/appsContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:columnCount="3"
+            android:alignmentMode="alignMargins"
+            android:useDefaultMargins="false" />
+    </ScrollView>
 
     <Button
         android:id="@+id/btnBack"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="العودة" />
+        android:text="قفل والعودة للاقتباسات" />
 </LinearLayout>

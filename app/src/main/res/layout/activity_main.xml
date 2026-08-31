@@ -2,45 +2,117 @@
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@color/quotes_background"
     android:orientation="vertical"
-    android:padding="20dp"
-    android:background="#F7F7F7">
+    android:padding="16dp">
 
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="اقتباسات"
-        android:textSize="28sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:textColor="#222222"
-        android:paddingBottom="8dp" />
+        android:background="@drawable/bg_quotes_header"
+        android:orientation="vertical"
+        android:padding="20dp">
 
-    <TextView
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:text="اقتباسات"
+            android:textColor="@color/quotes_white"
+            android:textSize="30sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:gravity="center"
+            android:text="كلمات تستحق أن تبقى"
+            android:textColor="#D8E5E2"
+            android:textSize="14sp" />
+
+        <TextView
+            android:id="@+id/tvQuoteCount"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/bg_quote_chip"
+            android:paddingStart="12dp"
+            android:paddingTop="6dp"
+            android:paddingEnd="12dp"
+            android:paddingBottom="6dp"
+            android:text="0 اقتباس"
+            android:textColor="@color/quotes_primary"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+
+    <EditText
+        android:id="@+id/etQuoteSearch"
+        android:layout_width="match_parent"
+        android:layout_height="52dp"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/bg_quote_search"
+        android:hint="ابحث في الاقتباسات..."
+        android:imeOptions="actionDone"
+        android:inputType="text"
+        android:paddingStart="16dp"
+        android:paddingEnd="16dp"
+        android:singleLine="true"
+        android:textColor="@color/quotes_text"
+        android:textColorHint="@color/quotes_text_secondary"
+        android:textDirection="locale"
+        android:textSize="15sp" />
+
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="كلمات تستحق أن تبقى"
-        android:textSize="14sp"
-        android:gravity="center"
-        android:textColor="#666666"
-        android:paddingBottom="18dp" />
+        android:layout_marginTop="10dp"
+        android:orientation="horizontal">
+
+        <Button
+            android:id="@+id/btnFavoriteFilter"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="☆ المفضلة"
+            android:textSize="14sp" />
+
+        <Button
+            android:id="@+id/btnAddQuote"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1.15"
+            android:layout_marginStart="8dp"
+            android:text="+ اقتباس جديد"
+            android:textSize="14sp" />
+    </LinearLayout>
 
     <TextView
-        android:id="@+id/tvQuotes"
+        android:id="@+id/tvListStatus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingStart="4dp"
+        android:paddingTop="10dp"
+        android:paddingEnd="4dp"
+        android:paddingBottom="8dp"
+        android:text="كل الاقتباسات"
+        android:textColor="@color/quotes_text_secondary"
+        android:textSize="13sp" />
+
+    <ScrollView
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:textSize="17sp"
-        android:textColor="#222222"
-        android:gravity="top|start"
-        android:lineSpacingExtra="6dp"
-        android:padding="8dp"
-        android:text="" />
+        android:clipToPadding="false"
+        android:fillViewport="true">
 
-    <Button
-        android:id="@+id/btnAddQuote"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="إضافة اقتباس"
-        android:textSize="16sp" />
+        <LinearLayout
+            android:id="@+id/quotesContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingBottom="12dp" />
+    </ScrollView>
 </LinearLayout>

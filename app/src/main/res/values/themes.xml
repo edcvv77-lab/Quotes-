@@ -1,6 +1,14 @@
 <resources>
-    <style name="Theme.AihamQuotes" parent="android:Theme.Material.NoActionBar">
-        <item name="android:statusBarColor">#1E293B</item>
-        <item name="android:navigationBarColor">#0F172A</item>
+    <style name="Theme.AihamQuotes" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">@color/quotes_primary</item>
+        <item name="colorPrimaryVariant">@color/quotes_primary_dark</item>
+        <item name="colorOnPrimary">@color/quotes_white</item>
+        <item name="colorSecondary">@color/quotes_accent</item>
+        <item name="colorOnSecondary">@color/quotes_text</item>
+        <item name="android:statusBarColor">@color/quotes_primary_dark</item>
+        <item name="android:navigationBarColor">@color/quotes_primary_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:fontFamily">sans</item>
+        <item name="android:windowActionModeOverlay">true</item>
     </style>
 </resources>
