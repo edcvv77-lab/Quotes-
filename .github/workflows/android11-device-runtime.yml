@@ -65,41 +65,46 @@ jobs:
           adb install -r app/build/outputs/apk/debug/app-debug.apk
           adb install -r app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
 
-          curl -L --fail --retry 3             -o /tmp/bundletool.jar             https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar
-          java -jar /tmp/bundletool.jar build-apks             --bundle=AihamVirtualTest/build/outputs/bundle/debug/AihamVirtualTest-debug.aab             --output=/tmp/AihamVirtualTest.apks             --connected-device             --ks="$HOME/.android/debug.keystore"             --ks-pass=pass:android             --ks-key-alias=androiddebugkey             --key-pass=pass:android             --overwrite
+          curl -L --fail --retry 3 \
+            -o /tmp/bundletool.jar \
+            https://github.com/google/bundletool/releases/download/1.18.3/bundletool-all-1.18.3.jar
+          mkdir -p "$HOME/.android"
+          if [ ! -s "$HOME/.android/debug.keystore" ]; then
+            keytool -genkeypair -v \
+              -keystore "$HOME/.android/debug.keystore" \
+              -storepass android \
+              -alias androiddebugkey \
+              -keypass android \
+              -dname "CN=Android Debug,O=Android,C=US" \
+              -keyalg RSA -keysize 2048 -validity 10000
+          fi
+
+          java -jar /tmp/bundletool.jar build-apks \
+            --bundle=AihamVirtualTest/build/outputs/bundle/debug/AihamVirtualTest-debug.aab \
+            --output=/tmp/AihamVirtualTest.apks \
+            --connected-device \
+            --ks="$HOME/.android/debug.keystore" \
+            --ks-pass=pass:android \
+            --ks-key-alias=androiddebugkey \
+            --key-pass=pass:android \
+            --overwrite
           java -jar /tmp/bundletool.jar install-apks --apks=/tmp/AihamVirtualTest.apks
           test "$(adb shell pm path com.aiham.virtualtest | tr -d '\r' | grep -c '^package:')" -ge 2
 
           adb logcat -c
-          adb shell am instrument -w -r             -e class com.aiham.quotes.SplitPackagePrivateCopyInstrumentedTest             com.aiham.quotes.test/androidx.test.runner.AndroidJUnitRunner | tee split-private-copy.txt
+          adb shell am instrument -w -r \
+            -e class com.aiham.quotes.SplitPackagePrivateCopyInstrumentedTest \
+            com.aiham.quotes.test/androidx.test.runner.AndroidJUnitRunner | tee split-private-copy.txt
           grep -Eq '^OK \([0-9]+ tests?\)' split-private-copy.txt
 
-          if adb shell pm list packages | grep -q '^package:com.aiham.virtualtest
           if adb shell pm list packages | grep -q '^package:com.aiham.virtualtest$'; then
-            echo "Guest leaked into Android host PackageManager"
-            exit 1
-          fi
-
-          adb logcat -d -v time > logcat.txt
-          grep -q 'AIHAM_GUEST_TEST.*Guest MainActivity onResume' logcat.txt
-          grep -q 'AIHAM_ENGINE.*Storage safety.*internalRoot=true.*appScopedExternal=true' logcat.txt
-
-      - name: Upload runtime evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: Android-11-physical-runtime-evidence
-          path: |
-            split-private-copy.txt
-            instrumentation.txt
-            logcat.txt
-          if-no-files-found: warn
-; then
             echo "Normal split source package still exists after private-copy acceptance"
             exit 1
           fi
 
-          adb shell am instrument -w -r             -e class com.aiham.quotes.BlackBoxRuntimeInstrumentedTest             com.aiham.quotes.test/androidx.test.runner.AndroidJUnitRunner | tee instrumentation.txt
+          adb shell am instrument -w -r \
+            -e class com.aiham.quotes.BlackBoxRuntimeInstrumentedTest \
+            com.aiham.quotes.test/androidx.test.runner.AndroidJUnitRunner | tee instrumentation.txt
           grep -Eq '^OK \([0-9]+ tests?\)' instrumentation.txt
 
           if adb shell pm list packages | grep -q '^package:com.aiham.virtualtest$'; then
@@ -117,6 +122,7 @@ jobs:
         with:
           name: Android-11-physical-runtime-evidence
           path: |
+            split-private-copy.txt
             instrumentation.txt
             logcat.txt
           if-no-files-found: warn
