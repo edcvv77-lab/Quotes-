@@ -292,10 +292,10 @@ class BlackBoxVirtualEngine : VirtualEngine {
 
             if (waitForVirtualProcess(packageName, FINAL_LAUNCH_WAIT_MS)) {
                 Log.i(GUEST_TAG, "Guest process verified running package=" + packageName)
-                EngineResult(true, "تم تشغيل التطبيق الافتراضي.", packageName)
+                EngineResult(true, "بدأت عملية التطبيق داخل المحرك.", packageName)
             } else {
                 Log.e(GUEST_TAG, "Guest process did not start package=" + packageName)
-                EngineResult(false, "تعذر تأكيد تشغيل التطبيق الافتراضي.", packageName)
+                EngineResult(false, "لم يبدأ التطبيق داخل المحرك.", packageName)
             }
         } catch (t: Throwable) {
             Log.e(GUEST_TAG, "Guest launch failed package=" + packageName, t)
