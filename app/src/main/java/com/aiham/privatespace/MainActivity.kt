@@ -14,11 +14,14 @@ import android.text.TextWatcher
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
+import android.view.ViewGroup
+import android.widget.BaseAdapter
 import android.widget.Button
 import android.widget.EditText
 import android.widget.GridLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
+import android.widget.ListView
 import android.widget.TextView
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
@@ -30,6 +33,7 @@ import com.aiham.privatespace.apps.InstalledAppCloneManager
 import com.aiham.privatespace.engine.BlackBoxVirtualEngine
 import com.aiham.privatespace.permissions.GuestPermissionManager
 import java.io.File
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
     private lateinit var tvQuoteCount: TextView
@@ -385,18 +389,7 @@ class MainActivity : AppCompatActivity() {
                             return@fold
                         }
 
-                        val labels = apps.map { app ->
-                            app.label + "\n" + app.packageName
-                        }.toTypedArray()
-
-                        AlertDialog.Builder(this)
-                            .setTitle("اختر تطبيقًا لنسخه")
-                            .setItems(labels) { _, which ->
-                                cloneInstalledApp(apps[which])
-                            }
-                            .setNegativeButton("إلغاء", null)
-                            .show()
-
+                        showInstalledAppPickerDialog(apps)
                         tvPrivateStatus.text = "اختر التطبيق الذي تريد نسخه إلى المساحة."
                     },
                     onFailure = { error ->
@@ -406,6 +399,47 @@ class MainActivity : AppCompatActivity() {
                 )
             }
         }.start()
+    }
+
+    private fun showInstalledAppPickerDialog(apps: List<InstalledAppCandidate>) {
+        val content = layoutInflater.inflate(R.layout.dialog_installed_app_picker, null)
+        val search = content.findViewById<EditText>(R.id.etInstalledAppSearch)
+        val list = content.findViewById<ListView>(R.id.listInstalledApps)
+        val count = content.findViewById<TextView>(R.id.tvInstalledAppCount)
+        val empty = content.findViewById<TextView>(R.id.tvInstalledAppEmpty)
+        val adapter = InstalledAppPickerAdapter(apps)
+
+        list.adapter = adapter
+        list.emptyView = empty
+        count.text = "التطبيقات الظاهرة: " + adapter.count
+
+        val dialog = AlertDialog.Builder(this)
+            .setView(content)
+            .setNegativeButton("إلغاء", null)
+            .create()
+
+        list.setOnItemClickListener { _, _, position, _ ->
+            val selected = adapter.getItem(position)
+            dialog.dismiss()
+            cloneInstalledApp(selected)
+        }
+
+        search.addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) = Unit
+
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, countValue: Int) {
+                adapter.filter(s?.toString().orEmpty())
+                count.text = "التطبيقات الظاهرة: " + adapter.count
+            }
+
+            override fun afterTextChanged(s: Editable?) = Unit
+        })
+
+        dialog.setOnShowListener {
+            content.isFocusableInTouchMode = true
+            content.requestFocus()
+        }
+        dialog.show()
     }
 
     private fun cloneInstalledApp(app: InstalledAppCandidate) {
@@ -806,6 +840,67 @@ class MainActivity : AppCompatActivity() {
                 after?.invoke()
             }
         }.start()
+    }
+
+    private inner class InstalledAppPickerAdapter(
+        apps: List<InstalledAppCandidate>
+    ) : BaseAdapter() {
+        private val allApps = apps.toList()
+        private val visibleApps = apps.toMutableList()
+        private val iconCache = mutableMapOf<String, Drawable?>()
+
+        override fun getCount(): Int = visibleApps.size
+
+        override fun getItem(position: Int): InstalledAppCandidate = visibleApps[position]
+
+        override fun getItemId(position: Int): Long = position.toLong()
+
+        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+            val row = convertView ?: layoutInflater.inflate(
+                R.layout.item_installed_app_candidate,
+                parent,
+                false
+            )
+            val app = getItem(position)
+
+            row.findViewById<TextView>(R.id.tvInstalledAppLabel).text = app.label
+            row.findViewById<TextView>(R.id.tvInstalledAppPackage).text = app.packageName
+
+            val iconView = row.findViewById<ImageView>(R.id.ivInstalledAppIcon)
+            val icon = if (iconCache.containsKey(app.packageName)) {
+                iconCache[app.packageName]
+            } else {
+                installedAppCloneManager.loadIcon(app.packageName).also {
+                    iconCache[app.packageName] = it
+                }
+            }
+
+            if (icon != null) {
+                iconView.setImageDrawable(icon)
+            } else {
+                iconView.setImageResource(android.R.drawable.sym_def_app_icon)
+            }
+
+            return row
+        }
+
+        fun filter(rawQuery: String) {
+            val query = rawQuery.trim().lowercase(Locale.getDefault())
+            visibleApps.clear()
+
+            if (query.isEmpty()) {
+                visibleApps.addAll(allApps)
+            } else {
+                visibleApps.addAll(
+                    allApps.filter { app ->
+                        app.label.lowercase(Locale.getDefault()).contains(query) ||
+                            app.packageName.lowercase(Locale.ROOT).contains(query)
+                    }
+                )
+            }
+
+            notifyDataSetChanged()
+        }
     }
 
     private data class QuoteUiItem(
