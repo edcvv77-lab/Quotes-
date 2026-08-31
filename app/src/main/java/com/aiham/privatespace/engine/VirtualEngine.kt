@@ -13,6 +13,7 @@ interface VirtualEngine {
     fun initialize(context: Context): EngineResult
     fun onApplicationCreate(): EngineResult
     fun installApk(apkFile: File): EngineResult
+    fun installHostPackage(packageName: String): EngineResult
     fun uninstallApp(packageName: String): EngineResult
     fun listInstalledApps(): Result<List<String>>
     fun launchApp(packageName: String, context: Context): EngineResult

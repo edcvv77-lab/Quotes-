@@ -49,6 +49,7 @@ class MainActivity : AppCompatActivity() {
     private val installedAppCloneManager by lazy { InstalledAppCloneManager(this) }
 
     private var pendingGuestApk: File? = null
+    private var pendingInstalledClonePackage: String? = null
     private var inPrivateSpace = false
     private var favoritesOnly = false
 
@@ -65,6 +66,8 @@ class MainActivity : AppCompatActivity() {
             ?.getString(STATE_PENDING_APK)
             ?.let(::File)
             ?.takeIf { it.isFile }
+        pendingInstalledClonePackage =
+            savedInstanceState?.getString(STATE_PENDING_INSTALLED_CLONE)
 
         if (savedInstanceState?.getBoolean(STATE_PRIVATE_SPACE) == true) {
             enterPrivateSpace()
@@ -76,6 +79,9 @@ class MainActivity : AppCompatActivity() {
     override fun onSaveInstanceState(outState: Bundle) {
         outState.putBoolean(STATE_PRIVATE_SPACE, inPrivateSpace)
         pendingGuestApk?.absolutePath?.let { outState.putString(STATE_PENDING_APK, it) }
+        pendingInstalledClonePackage?.let {
+            outState.putString(STATE_PENDING_INSTALLED_CLONE, it)
+        }
         super.onSaveInstanceState(outState)
     }
 
@@ -380,25 +386,13 @@ class MainActivity : AppCompatActivity() {
                         }
 
                         val labels = apps.map { app ->
-                            buildString {
-                                append(app.label)
-                                append("\n")
-                                append(app.packageName)
-                                if (app.usesSplitApks) {
-                                    append("  •  غير قابل للنسخ حاليًا")
-                                }
-                            }
+                            app.label + "\n" + app.packageName
                         }.toTypedArray()
 
                         AlertDialog.Builder(this)
                             .setTitle("اختر تطبيقًا لنسخه")
                             .setItems(labels) { _, which ->
-                                val selected = apps[which]
-                                if (selected.usesSplitApks) {
-                                    showSplitApkUnsupported(selected)
-                                } else {
-                                    cloneInstalledApp(selected)
-                                }
+                                cloneInstalledApp(apps[which])
                             }
                             .setNegativeButton("إلغاء", null)
                             .show()
@@ -414,55 +408,43 @@ class MainActivity : AppCompatActivity() {
         }.start()
     }
 
-    private fun showSplitApkUnsupported(app: InstalledAppCandidate) {
-        Log.w(
-            SPACE_TAG,
-            "Clone blocked for split APK package=" + app.packageName +
-                " splits=" + app.splitApkPaths.size
-        )
-
-        AlertDialog.Builder(this)
-            .setTitle("لا يمكن نسخ هذا التطبيق بهذه النسخة")
-            .setMessage(
-                app.label + " مثبت على الجهاز على عدة أجزاء. لا تدخل الإعدادات، ولا تستخرج base.apk، " +
-                    "ولا تحتاج منح كل الصلاحيات يدويًا. المحرك الحالي لا يستطيع جمع هذه الأجزاء بعد، " +
-                    "لذلك أوقفت النسخ حتى لا يظهر لك تطبيق ناقص أو لا يعمل."
-            )
-            .setPositiveButton("حسنًا", null)
-            .show()
-
-        tvPrivateStatus.text =
-            app.label + " يحتاج دعم التطبيقات متعددة الأجزاء قبل نسخه إلى المساحة."
-    }
-
     private fun cloneInstalledApp(app: InstalledAppCandidate) {
         if (!inPrivateSpace) return
 
         tvPrivateStatus.text = "جاري تجهيز نسخة مستقلة من " + app.label + "..."
 
         Thread {
-            val copiedApk = installedAppCloneManager.copyBaseApkForClone(app).getOrElse { error ->
-                Log.e(SPACE_TAG, "Installed app clone copy failed package=" + app.packageName, error)
+            val baseApk = File(app.baseApkPath)
+            val plan = guestPermissionManager.buildPlan(baseApk).getOrElse { error ->
+                Log.e(
+                    SPACE_TAG,
+                    "Unable to build installed-app permission plan package=" + app.packageName,
+                    error
+                )
                 runOnUiThread {
                     if (inPrivateSpace) {
-                        tvPrivateStatus.text = "تعذر نسخ ملف التطبيق من الجهاز."
+                        tvPrivateStatus.text = "تعذر فحص أذونات التطبيق."
                     }
                 }
                 return@Thread
             }
 
-            val metadata = guestApkInspector.inspectFile(copiedApk).getOrElse { error ->
-                Log.e(SPACE_TAG, "Copied installed app APK could not be inspected", error)
-                copiedApk.delete()
-                runOnUiThread {
-                    if (inPrivateSpace) {
-                        tvPrivateStatus.text = "تعذر قراءة نسخة التطبيق المجهزة."
-                    }
-                }
-                return@Thread
-            }
+            runOnUiThread {
+                if (!inPrivateSpace) return@runOnUiThread
 
-            prepareGuestForInstall(metadata)
+                if (plan.missingRuntimePermissions.isEmpty()) {
+                    installInstalledGuest(app, permissionsDenied = false)
+                } else {
+                    pendingGuestApk = null
+                    pendingInstalledClonePackage = app.packageName
+                    tvPrivateStatus.text =
+                        "يحتاج " + app.label + " إلى بعض الأذونات قبل التشغيل."
+                    guestPermissionManager.requestMissingRuntimePermissions(
+                        plan,
+                        REQUEST_GUEST_PERMISSIONS
+                    )
+                }
+            }
         }.start()
     }
 
@@ -516,6 +498,37 @@ class MainActivity : AppCompatActivity() {
 
         if (requestCode != REQUEST_GUEST_PERMISSIONS) return
 
+        val denied = permissions.indices.any { index ->
+            grantResults.getOrNull(index) != PackageManager.PERMISSION_GRANTED
+        }
+
+        if (denied) {
+            Log.w(SPACE_TAG, "One or more guest runtime permissions were denied")
+        }
+
+        val installedClonePackage = pendingInstalledClonePackage
+        if (installedClonePackage != null) {
+            pendingInstalledClonePackage = null
+            pendingGuestApk = null
+
+            val app = installedAppCloneManager.findCloneCandidate(installedClonePackage)
+                .getOrElse { error ->
+                    Log.e(
+                        SPACE_TAG,
+                        "Pending installed app could not be resolved package=" +
+                            installedClonePackage,
+                        error
+                    )
+                    if (inPrivateSpace) {
+                        tvPrivateStatus.text = "تعذر متابعة نسخ التطبيق المثبت."
+                    }
+                    return
+                }
+
+            installInstalledGuest(app, permissionsDenied = denied)
+            return
+        }
+
         val apk = pendingGuestApk
         pendingGuestApk = null
 
@@ -523,14 +536,6 @@ class MainActivity : AppCompatActivity() {
             Log.w(SPACE_TAG, "Permission result received without pending guest APK")
             if (inPrivateSpace) tvPrivateStatus.text = "تعذر متابعة تثبيت التطبيق."
             return
-        }
-
-        val denied = permissions.indices.any { index ->
-            grantResults.getOrNull(index) != PackageManager.PERMISSION_GRANTED
-        }
-
-        if (denied) {
-            Log.w(SPACE_TAG, "One or more guest runtime permissions were denied")
         }
 
         val metadata = guestApkInspector.inspectFile(apk).getOrElse { error ->
@@ -541,6 +546,38 @@ class MainActivity : AppCompatActivity() {
         }
 
         installImportedGuest(metadata, permissionsDenied = denied)
+    }
+
+    private fun installInstalledGuest(
+        app: InstalledAppCandidate,
+        permissionsDenied: Boolean
+    ) {
+        runPrivateAction(
+            progressText = "جاري نسخ " + app.label + " داخل المساحة...",
+            action = {
+                val result = virtualEngine.installHostPackage(app.packageName)
+                if (!result.success) {
+                    return@runPrivateAction result.message
+                }
+
+                guestAppCatalog.save(
+                    packageName = app.packageName,
+                    label = app.label,
+                    icon = installedAppCloneManager.loadIcon(app.packageName)
+                )
+
+                buildString {
+                    append("تم نسخ ")
+                    append(app.label)
+                    append(" داخل المساحة.")
+
+                    if (permissionsDenied) {
+                        append("\nتم رفض بعض الأذونات؛ قد لا تعمل بعض الوظائف.")
+                    }
+                }
+            },
+            after = { refreshVirtualApps() }
+        )
     }
 
     private fun installImportedGuest(
@@ -785,5 +822,6 @@ class MainActivity : AppCompatActivity() {
 
         const val STATE_PRIVATE_SPACE = "state_private_space"
         const val STATE_PENDING_APK = "state_pending_apk"
+        const val STATE_PENDING_INSTALLED_CLONE = "state_pending_installed_clone"
     }
 }

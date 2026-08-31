@@ -3,6 +3,7 @@ package com.aiham.quotes
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry
 import com.aiham.privatespace.engine.BlackBoxVirtualEngine
 import top.niunaijun.blackbox.core.env.BEnvironment
 import java.io.File
@@ -18,11 +19,16 @@ import org.junit.runner.RunWith
 class BlackBoxRuntimeInstrumentedTest {
     private lateinit var context: Context
     private lateinit var engine: BlackBoxVirtualEngine
+    private lateinit var installedTestPackage: String
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
         engine = (context.applicationContext as AihamApp).virtualEngine
+        installedTestPackage = InstrumentationRegistry.getInstrumentation().context.packageName
+        if (engine.isInstalled(installedTestPackage)) {
+            engine.uninstallApp(installedTestPackage)
+        }
         if (engine.isInstalled(TEST_PACKAGE)) {
             engine.uninstallApp(TEST_PACKAGE)
         }
@@ -30,9 +36,36 @@ class BlackBoxRuntimeInstrumentedTest {
 
     @After
     fun cleanUp() {
+        if (engine.isInstalled(installedTestPackage)) {
+            engine.uninstallApp(installedTestPackage)
+        }
         if (engine.isInstalled(TEST_PACKAGE)) {
             engine.uninstallApp(TEST_PACKAGE)
         }
+    }
+
+
+    @Test
+    fun installedHostPackageCanBeImportedThroughBlackBoxSystemPath() {
+        assertTrue("BlackBox must be ready", engine.getEngineStatus() == "جاهز")
+        assertTrue(
+            "Instrumentation package must be visible to the Android package manager",
+            engine.isHostPackageInstalled(installedTestPackage, context)
+        )
+
+        val install = engine.installHostPackage(installedTestPackage)
+        assertTrue("Installed-package import failed: " + install.message, install.success)
+        assertTrue(
+            "Imported host package missing from BlackBox",
+            engine.isInstalled(installedTestPackage)
+        )
+
+        val uninstall = engine.uninstallApp(installedTestPackage)
+        assertTrue("Imported host package uninstall failed: " + uninstall.message, uninstall.success)
+        assertFalse(
+            "Imported host package still present after uninstall",
+            engine.isInstalled(installedTestPackage)
+        )
     }
 
     @Test

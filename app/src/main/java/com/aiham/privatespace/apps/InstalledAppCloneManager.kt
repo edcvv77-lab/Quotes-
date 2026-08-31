@@ -3,10 +3,8 @@ package com.aiham.privatespace.apps
 import android.content.Context
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
+import android.graphics.drawable.Drawable
 import android.util.Log
-import java.io.File
-import java.io.FileInputStream
-import java.io.FileOutputStream
 
 internal data class InstalledAppPolicyInput(
     val ownPackage: Boolean,
@@ -50,59 +48,50 @@ class InstalledAppCloneManager(
                     )
                 )
             }
-            .mapNotNull { info ->
-                val sourceDir = info.sourceDir?.takeIf { it.isNotBlank() }
-                    ?: return@mapNotNull null
-
-                val label = runCatching {
-                    info.loadLabel(packageManager)?.toString()
-                }.getOrNull()?.trim().takeUnless { it.isNullOrEmpty() } ?: info.packageName
-
-                InstalledAppCandidate(
-                    packageName = info.packageName,
-                    label = label,
-                    baseApkPath = sourceDir,
-                    splitApkPaths = info.splitSourceDirs.orEmpty()
-                        .filter { it.isNotBlank() }
-                        .distinct()
-                )
-            }
+            .mapNotNull { info -> toCandidate(info, packageManager) }
             .sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.label })
             .toList()
     }.onFailure {
         Log.e(TAG, "Unable to enumerate installed applications", it)
     }
 
-    fun copyBaseApkForClone(candidate: InstalledAppCandidate): Result<File> = runCatching {
-        require(!candidate.usesSplitApks) {
-            "Split APK applications are not supported by the pinned BlackBox engine"
-        }
-
-        val source = File(candidate.baseApkPath)
-        require(source.isFile && source.length() > 0L) {
-            "Installed application base APK is unavailable"
-        }
-
-        val copy = File.createTempFile("installed-clone-", ".apk", context.cacheDir)
-        FileInputStream(source).use { input ->
-            FileOutputStream(copy, false).use { output ->
-                input.copyTo(output)
-            }
-        }
-
-        require(copy.length() == source.length()) {
-            "Installed application APK copy is incomplete"
-        }
-
-        Log.i(
-            TAG,
-            "Prepared installed app clone package=" + candidate.packageName +
-                " bytes=" + copy.length()
-        )
-
-        copy
+    fun findCloneCandidate(packageName: String): Result<InstalledAppCandidate> = runCatching {
+        require(packageName.isNotBlank()) { "Installed application package name is missing" }
+        val packageManager = context.packageManager
+        val info = packageManager.getApplicationInfo(packageName, PackageManager.GET_META_DATA)
+        toCandidate(info, packageManager)
+            ?: error("Installed application metadata is incomplete")
     }.onFailure {
-        Log.e(TAG, "Unable to prepare installed app clone package=" + candidate.packageName, it)
+        Log.e(TAG, "Unable to resolve installed application package=" + packageName, it)
+    }
+
+    fun loadIcon(packageName: String): Drawable? {
+        return runCatching {
+            context.packageManager.getApplicationIcon(packageName)
+        }.onFailure {
+            Log.w(TAG, "Unable to load installed application icon package=" + packageName, it)
+        }.getOrNull()
+    }
+
+    private fun toCandidate(
+        info: ApplicationInfo,
+        packageManager: PackageManager
+    ): InstalledAppCandidate? {
+        val sourceDir = info.sourceDir?.takeIf { it.isNotBlank() }
+            ?: return null
+
+        val label = runCatching {
+            info.loadLabel(packageManager)?.toString()
+        }.getOrNull()?.trim().takeUnless { it.isNullOrEmpty() } ?: info.packageName
+
+        return InstalledAppCandidate(
+            packageName = info.packageName,
+            label = label,
+            baseApkPath = sourceDir,
+            splitApkPaths = info.splitSourceDirs.orEmpty()
+                .filter { it.isNotBlank() }
+                .distinct()
+        )
     }
 
     private companion object {

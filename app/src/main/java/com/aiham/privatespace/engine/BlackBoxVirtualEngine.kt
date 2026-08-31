@@ -92,6 +92,48 @@ class BlackBoxVirtualEngine : VirtualEngine {
         }
     }
 
+    override fun installHostPackage(packageName: String): EngineResult {
+        if (!isReady()) return EngineResult(false, "محرك التطبيقات الافتراضية غير جاهز.", packageName)
+        if (packageName.isBlank()) return EngineResult(false, "تعذر تحديد التطبيق المثبت.")
+
+        return try {
+            val hostInfo = BlackBoxCore.getPackageManager().getPackageInfo(packageName, 0)
+            val splitCount = hostInfo.applicationInfo?.splitSourceDirs?.size ?: 0
+
+            Log.i(
+                GUEST_TAG,
+                "Importing installed host package=" + packageName +
+                    " splitCount=" + splitCount +
+                    " using BlackBox system-package install path"
+            )
+
+            val result = BlackBoxCore.get().installPackageAsUser(packageName, USER_ID)
+            val installed = BlackBoxCore.get().isInstalled(packageName, USER_ID)
+
+            if (result != null && result.success && installed) {
+                Log.i(
+                    GUEST_TAG,
+                    "Installed host package import verified package=" + packageName +
+                        " splitCount=" + splitCount
+                )
+                EngineResult(true, "تم نسخ التطبيق داخل المساحة.", packageName)
+            } else {
+                val detail = result?.msg ?: "BlackBox returned no error detail"
+                Log.e(
+                    GUEST_TAG,
+                    "Installed host package import not verified package=" + packageName +
+                        " splitCount=" + splitCount +
+                        " detail=" + detail +
+                        " installed=" + installed
+                )
+                EngineResult(false, "تعذر نسخ التطبيق داخل المساحة.", packageName)
+            }
+        } catch (t: Throwable) {
+            Log.e(GUEST_TAG, "Installed host package import failed package=" + packageName, t)
+            EngineResult(false, "تعذر نسخ التطبيق داخل المساحة.", packageName)
+        }
+    }
+
     override fun uninstallApp(packageName: String): EngineResult {
         if (!isReady()) return EngineResult(false, "محرك التطبيقات الافتراضية غير جاهز.", packageName)
         return try {
