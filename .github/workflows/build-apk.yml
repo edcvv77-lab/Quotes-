@@ -3,7 +3,7 @@ name: Build Aiham Private Space
 on:
   workflow_dispatch:
   push:
-    branches: [main, phase2-runtime-fix, rework/android11-private-runtime]
+    branches: [main, phase2-runtime-fix, rework/android11-private-runtime, 'ui/**']
   pull_request:
     branches: [main]
 
