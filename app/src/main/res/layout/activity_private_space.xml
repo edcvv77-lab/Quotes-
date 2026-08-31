@@ -121,6 +121,23 @@
                 android:textSize="12.5sp" />
         </LinearLayout>
 
+        <Button
+            android:id="@+id/btnShareCrashReport"
+            android:layout_width="match_parent"
+            android:layout_height="48dp"
+            android:layout_marginTop="8dp"
+            android:background="@drawable/bg_hadeel_clone_button"
+            android:backgroundTint="@null"
+            android:gravity="center"
+            android:minHeight="0dp"
+            android:stateListAnimator="@null"
+            android:text="مشاركة تقرير التعطل السابق"
+            android:textAllCaps="false"
+            android:textColor="@color/private_text"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:visibility="gone" />
+
         <LinearLayout
             android:id="@+id/privateActionRow"
             android:layout_width="match_parent"
