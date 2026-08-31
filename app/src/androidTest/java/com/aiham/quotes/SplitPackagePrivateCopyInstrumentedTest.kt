@@ -92,7 +92,7 @@ class SplitPackagePrivateCopyInstrumentedTest {
         )
     }
 
-    private fun assertPrivateCopy(basePath: String, splitPaths: Array<String>, expectedSplits: Int) {
+    private fun assertPrivateCopy(basePath: String, splitPaths: Array<out String>, expectedSplits: Int) {
         val privateRoot = BEnvironment.getAppDir(TEST_PACKAGE).canonicalFile
         val base = File(basePath).canonicalFile
         assertTrue("Private base APK missing: " + base, base.isFile)
