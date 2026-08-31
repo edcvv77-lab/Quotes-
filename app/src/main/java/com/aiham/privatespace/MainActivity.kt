@@ -36,6 +36,7 @@ import com.aiham.privatespace.apps.GuestApkMetadata
 import com.aiham.privatespace.apps.GuestAppCatalog
 import com.aiham.privatespace.apps.InstalledAppCandidate
 import com.aiham.privatespace.apps.InstalledAppCloneManager
+import com.aiham.privatespace.diagnostics.VirtualCrashReporter
 import com.aiham.privatespace.engine.BlackBoxVirtualEngine
 import com.aiham.privatespace.permissions.GuestPermissionManager
 import java.io.File
@@ -359,6 +360,7 @@ class MainActivity : AppCompatActivity() {
         findViewById<Button>(R.id.btnCloneInstalledApp).setOnClickListener { showInstalledAppPicker() }
         findViewById<Button>(R.id.btnRefreshApps).setOnClickListener { refreshVirtualApps(userInitiated = true) }
         findViewById<Button>(R.id.btnBack).setOnClickListener { showQuotesHome() }
+        bindCrashReportAction()
 
         animatePrivateSpaceEntrance()
         refreshPrivateStatus()
@@ -943,6 +945,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun launchVirtualApp(packageName: String, label: String) {
+        VirtualCrashReporter.markLaunch(this, packageName, label)
         runPrivateAction(
             progressText = "جاري فتح " + label + "...",
             action = {
@@ -960,6 +963,42 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         )
+    }
+
+    private fun bindCrashReportAction() {
+        val button = findViewById<Button>(R.id.btnShareCrashReport)
+        val report = VirtualCrashReporter.readLastReport(this)
+        if (report.isNullOrBlank()) {
+            button.visibility = View.GONE
+            return
+        }
+
+        button.visibility = View.VISIBLE
+        button.setOnClickListener {
+            val latest = VirtualCrashReporter.readLastReport(this)
+            if (latest.isNullOrBlank()) {
+                button.visibility = View.GONE
+                tvPrivateStatus.text = "لا يوجد تقرير تعطل محفوظ."
+                return@setOnClickListener
+            }
+
+            val shareIntent = Intent(Intent.ACTION_SEND).apply {
+                type = "text/plain"
+                putExtra(Intent.EXTRA_SUBJECT, "تقرير تعطل المساحة الخاصة")
+                putExtra(Intent.EXTRA_TEXT, latest)
+            }
+
+            runCatching {
+                startActivity(Intent.createChooser(shareIntent, "مشاركة تقرير التعطل"))
+            }.onFailure { error ->
+                Log.e(SPACE_TAG, "Unable to share crash report", error)
+                val clipboard = getSystemService(CLIPBOARD_SERVICE) as ClipboardManager
+                clipboard.setPrimaryClip(
+                    ClipData.newPlainText("virtual-crash-report", latest)
+                )
+                tvPrivateStatus.text = "تعذر فتح المشاركة، فتم نسخ تقرير التعطل."
+            }
+        }
     }
 
     private fun confirmRemoveVirtualApp(packageName: String, label: String) {
