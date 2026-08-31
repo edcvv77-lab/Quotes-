@@ -10,13 +10,13 @@ Active development branch:
 `ui/pro-architecture-redesign`
 
 Latest code/config commit verified by CI:
-`04d3f72df63b915466f215f4ded99d1e5ed402eb`
+`ac455e76029c77957609a52f9d0c41e2b82c7153`
 
 Latest verified GitHub Actions run:
 - workflow: **Build Aiham Private Space**
-- run: **#229**
+- run: **#263**
 - result: **SUCCESS**
-- source commit: `04d3f72df63b915466f215f4ded99d1e5ed402eb`
+- source commit: `ac455e76029c77957609a52f9d0c41e2b82c7153`
 
 The build verified:
 - real JVM unit tests;
@@ -102,9 +102,24 @@ Added/updated:
 - picker surfaces;
 - custom vector icons for search, add, favorites, clone, APK, refresh, lock, shield and navigation.
 
+### Hadeel private-space personalization
+
+Implemented after the first professional redesign:
+- only the private-space screen is personalized for Hadeel;
+- blush pink, lavender, cream and rose-gold palette;
+- `مساحة هديل الخاصة` title, crown and Hadeel name sticker;
+- butterfly, sparkle and flower vector decorations;
+- soft Hadeel guest cards and matching installed-app picker;
+- private-only status/navigation bar colors;
+- staggered private-screen entrance and guest-card motion;
+- decorative animation is cancelled when leaving private space;
+- Quotes home visuals remain unchanged;
+- no BlackBox, permission, package-ID or Android API-target change.
+
 ## What is proven
 
-- Current branch compiles.
+- Current branch compiles at code commit `ac455e76029c77957609a52f9d0c41e2b82c7153`.
+- GitHub Actions run **#263** completed **SUCCESS**.
 - Unit tests pass.
 - All phone and sw600dp XML resources compile.
 - MaterialButton styles and new vector/shape resources compile.
