@@ -6,6 +6,8 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Color
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.net.Uri
 import android.os.Bundle
@@ -15,6 +17,7 @@ import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.view.WindowManager
 import android.widget.BaseAdapter
 import android.widget.Button
 import android.widget.EditText
@@ -34,6 +37,7 @@ import com.aiham.privatespace.engine.BlackBoxVirtualEngine
 import com.aiham.privatespace.permissions.GuestPermissionManager
 import java.io.File
 import java.util.Locale
+import kotlin.math.min
 
 class MainActivity : AppCompatActivity() {
     private lateinit var tvQuoteCount: TextView
@@ -156,8 +160,14 @@ class MainActivity : AppCompatActivity() {
             maxLines = 7
             setText(initialText)
             setSelection(text.length)
-            setPadding(36, 28, 36, 28)
+            setPadding(32, 24, 32, 24)
             textDirection = View.TEXT_DIRECTION_LOCALE
+            setTextColor(getColorCompat(R.color.quotes_text))
+            setHintTextColor(getColorCompat(R.color.quotes_text_secondary))
+            background = androidx.core.content.ContextCompat.getDrawable(
+                this@MainActivity,
+                R.drawable.bg_quote_search
+            )
         }
     }
 
@@ -191,7 +201,7 @@ class MainActivity : AppCompatActivity() {
             matchesSearch && matchesFavorite
         }
 
-        tvQuoteCount.text = "عدد الاقتباسات: " + items.size
+        tvQuoteCount.text = items.size.toString() + " اقتباس"
         tvListStatus.text = when {
             favoritesOnly && query.isNotEmpty() -> "نتائج البحث في المفضلة • " + visible.size
             favoritesOnly -> "المفضلة • " + visible.size
@@ -451,6 +461,16 @@ class MainActivity : AppCompatActivity() {
             content.requestFocus()
         }
         dialog.show()
+
+        dialog.window?.let { window ->
+            window.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
+            val maxDialogWidth = (640 * resources.displayMetrics.density).toInt()
+            val preferredWidth = (resources.displayMetrics.widthPixels * 0.92f).toInt()
+            window.setLayout(
+                min(preferredWidth, maxDialogWidth),
+                WindowManager.LayoutParams.WRAP_CONTENT
+            )
+        }
     }
 
     private fun cloneInstalledApp(app: InstalledAppCandidate) {
