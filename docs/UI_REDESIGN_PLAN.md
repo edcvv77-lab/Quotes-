@@ -84,3 +84,14 @@ Redesign:
 - sw600dp layouts compile.
 - private clone picker compiles and retains icon/search behavior.
 - no runtime claim is made until the tablet is tested.
+
+
+## Implementation status
+
+Status: **IMPLEMENTED AND BUILD-VERIFIED**
+
+Verified by GitHub Actions run **#229** on code/config commit `04d3f72df63b915466f215f4ded99d1e5ed402eb`.
+
+All planned phone/tablet layout resources, design-system resources and clone-picker presentation changes compile and pass the existing CI checks.
+
+Remaining acceptance is visual/runtime validation on the target Android 11 tablet. Build success is not treated as proof of target-device visual correctness or guest runtime success.
