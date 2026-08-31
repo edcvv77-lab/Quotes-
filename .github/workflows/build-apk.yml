@@ -3,7 +3,7 @@ name: Build Aiham Private Space
 on:
   workflow_dispatch:
   push:
-    branches: [main, phase2-runtime-fix]
+    branches: [main, phase2-runtime-fix, rework/android11-private-runtime]
   pull_request:
     branches: [main]
 
@@ -72,6 +72,12 @@ jobs:
       - name: Verify unit test report exists
         run: |
           test -n "$(find app/build/test-results/testDebugUnitTest -name 'TEST-*.xml' -print -quit)"
+
+      - name: Verify private split overlay was applied
+        run: |
+          grep -F "findClusterBaseApk" BlackBox/Bcore/src/main/java/top/niunaijun/blackbox/core/system/pm/BPackageManagerService.java
+          grep -F "Private split copy complete" BlackBox/Bcore/src/main/java/top/niunaijun/blackbox/core/system/pm/installer/CopyExecutor.java
+          grep -F "getSplitApkDir" BlackBox/Bcore/src/main/java/top/niunaijun/blackbox/core/env/BEnvironment.java
 
       - name: Build guest, host, and device-test APKs
         run: ./gradlew :AihamVirtualTest:assembleDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace
