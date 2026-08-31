@@ -56,6 +56,7 @@ class MainActivity : AppCompatActivity() {
     private var pendingInstalledClonePackage: String? = null
     private var inPrivateSpace = false
     private var favoritesOnly = false
+    @Volatile private var activityResumed = false
 
     private val defaultQuotes = listOf(
         "الأفعال الصغيرة المتكررة تصنع نتائج كبيرة.",
@@ -78,6 +79,16 @@ class MainActivity : AppCompatActivity() {
         } else {
             showQuotesHome()
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        activityResumed = true
+    }
+
+    override fun onPause() {
+        activityResumed = false
+        super.onPause()
     }
 
     override fun onSaveInstanceState(outState: Bundle) {
@@ -320,7 +331,7 @@ class MainActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btnPickApk).setOnClickListener { openApkPicker() }
         findViewById<Button>(R.id.btnCloneInstalledApp).setOnClickListener { showInstalledAppPicker() }
-        findViewById<Button>(R.id.btnRefreshApps).setOnClickListener { refreshVirtualApps() }
+        findViewById<Button>(R.id.btnRefreshApps).setOnClickListener { refreshVirtualApps(userInitiated = true) }
         findViewById<Button>(R.id.btnBack).setOnClickListener { showQuotesHome() }
 
         refreshPrivateStatus()
@@ -610,7 +621,7 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             },
-            after = { refreshVirtualApps() }
+            after = { message -> refreshVirtualApps(completionMessage = message) }
         )
     }
 
@@ -668,17 +679,23 @@ class MainActivity : AppCompatActivity() {
                     }
                 }
             },
-            after = {
+            after = { message ->
                 metadata.apkFile.delete()
-                refreshVirtualApps()
+                refreshVirtualApps(completionMessage = message)
             }
         )
     }
 
-    private fun refreshVirtualApps() {
+    private fun refreshVirtualApps(
+        completionMessage: String? = null,
+        userInitiated: Boolean = false
+    ) {
         if (!inPrivateSpace) return
 
-        tvPrivateStatus.text = "جاري تحديث التطبيقات..."
+        if (completionMessage == null) {
+            tvPrivateStatus.text =
+                if (userInitiated) "جاري تحديث قائمة التطبيقات..." else "جاري تحديث التطبيقات..."
+        }
 
         Thread {
             val result = virtualEngine.listInstalledApps()
@@ -689,12 +706,16 @@ class MainActivity : AppCompatActivity() {
                 result.fold(
                     onSuccess = { packages ->
                         renderVirtualApps(packages)
-                        tvPrivateStatus.text =
-                            if (packages.isEmpty()) {
+                        tvPrivateStatus.text = when {
+                            completionMessage != null ->
+                                completionMessage + "\nالتطبيقات داخل المساحة: " + packages.size
+                            userInitiated ->
+                                "تم تحديث قائمة التطبيقات • العدد: " + packages.size
+                            packages.isEmpty() ->
                                 "المساحة جاهزة • التخزين معزول داخليًا • لا توجد تطبيقات."
-                            } else {
+                            else ->
                                 "المساحة جاهزة • التخزين معزول داخليًا • التطبيقات: " + packages.size
-                            }
+                        }
                     },
                     onFailure = { error ->
                         Log.e(SPACE_TAG, "Unable to refresh virtual app list", error)
@@ -781,9 +802,20 @@ class MainActivity : AppCompatActivity() {
 
     private fun launchVirtualApp(packageName: String, label: String) {
         runPrivateAction(
-            progressText = "جاري تشغيل " + label + "...",
+            progressText = "جاري فتح " + label + "...",
             action = {
-                virtualEngine.launchApp(packageName, this).message
+                val result = virtualEngine.launchApp(packageName, this)
+                if (!result.success) {
+                    return@runPrivateAction result.message
+                }
+
+                Thread.sleep(LAUNCH_SURFACE_SETTLE_MS)
+
+                if (activityResumed) {
+                    "بدأ " + label + " داخل المحرك، لكن لم تظهر واجهته."
+                } else {
+                    "تم فتح " + label + "."
+                }
             }
         )
     }
@@ -820,7 +852,7 @@ class MainActivity : AppCompatActivity() {
     private fun runPrivateAction(
         progressText: String,
         action: () -> String,
-        after: (() -> Unit)? = null
+        after: ((String) -> Unit)? = null
     ) {
         if (!inPrivateSpace) return
 
@@ -837,7 +869,7 @@ class MainActivity : AppCompatActivity() {
             runOnUiThread {
                 if (!inPrivateSpace) return@runOnUiThread
                 tvPrivateStatus.text = message
-                after?.invoke()
+                after?.invoke(message)
             }
         }.start()
     }
