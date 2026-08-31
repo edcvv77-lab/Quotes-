@@ -1,7 +1,7 @@
 <resources>
     <color name="ic_launcher_background">#0D3532</color>
 
-    <!-- Quotes: warm editorial palette -->
+    <!-- Quotes: warm editorial palette (unchanged) -->
     <color name="quotes_background">#F3EFE7</color>
     <color name="quotes_surface">#FFFCF7</color>
     <color name="quotes_surface_soft">#F7F1E7</color>
@@ -16,17 +16,22 @@
     <color name="quotes_danger">#A24940</color>
     <color name="quotes_white">#FFFFFF</color>
 
-    <!-- Private space: midnight + emerald palette -->
-    <color name="private_background">#071019</color>
-    <color name="private_background_2">#0A1721</color>
-    <color name="private_surface">#101C29</color>
-    <color name="private_surface_2">#142433</color>
-    <color name="private_border">#263A4B</color>
-    <color name="private_primary">#1C6B5F</color>
-    <color name="private_primary_bright">#43B69D</color>
-    <color name="private_accent">#D1A55C</color>
-    <color name="private_text">#F4F7F8</color>
-    <color name="private_muted">#91A3B3</color>
-    <color name="private_success">#69D0AA</color>
-    <color name="private_danger">#E07B6C</color>
+    <!-- Hadeel private space only -->
+    <color name="private_background">#FFF8FA</color>
+    <color name="private_background_2">#F8EFF8</color>
+    <color name="private_surface">#FFFDFD</color>
+    <color name="private_surface_2">#FBEFF5</color>
+    <color name="private_border">#E9B8C8</color>
+    <color name="private_primary">#C76F99</color>
+    <color name="private_primary_bright">#E9A0B9</color>
+    <color name="private_accent">#C9A3D1</color>
+    <color name="private_text">#5B2940</color>
+    <color name="private_muted">#967884</color>
+    <color name="private_success">#BE648C</color>
+    <color name="private_danger">#B45465</color>
+    <color name="private_rose_gold">#C98E8C</color>
+    <color name="private_lavender">#B78AC2</color>
+    <color name="private_peach">#F4C6C5</color>
+    <color name="private_status_bar">#A97396</color>
+    <color name="private_nav_bar">#B985A4</color>
 </resources>
