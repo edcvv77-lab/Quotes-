@@ -47,13 +47,14 @@
             android:layout_marginTop="3dp"
             android:ellipsize="middle"
             android:maxLines="1"
-            android:textColor="#708597"
+            android:textColor="@color/private_muted"
             android:textSize="10sp" />
     </LinearLayout>
 
     <ImageView
-        android:layout_width="20dp"
-        android:layout_height="20dp"
+        android:layout_width="26dp"
+        android:layout_height="18dp"
+        android:alpha="0.75"
         android:contentDescription="اختيار"
-        android:src="@drawable/ic_chevron_left_20" />
+        android:src="@drawable/ic_hadeel_heart" />
 </LinearLayout>
