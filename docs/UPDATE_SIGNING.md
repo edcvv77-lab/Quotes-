@@ -7,13 +7,13 @@ Without a stable certificate Android rejects an APK as an update even when the a
 
 Expected SHA-256 certificate fingerprint:
 
-`F6:2D:BD:1D:DC:85:CD:99:83:42:80:84:52:5D:F3:43:CA:DC:24:F3:A9:4F:45:1C:E7:B6:71:3C:26:8D:10:B7`
+`30:BC:12:9E:7B:A9:85:19:86:FB:52:D9:94:8C:0A:35:8D:69:0E:30:58:E2:0A:6C:A5:61:DB:3E:B2:33:56:F5`
 
 Alias:
 
 `aiham_quotes_update`
 
-The private keystore must never be committed to this public repository.
+The private keystore must never be committed to this public repository. The permanent key was regenerated on 2026-08-31 because the earlier planned certificate had never been configured in GitHub Actions or distributed to a device.
 
 ## Required GitHub Actions secrets
 
