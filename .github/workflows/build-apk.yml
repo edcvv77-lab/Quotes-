@@ -78,6 +78,8 @@ jobs:
           grep -F "findClusterBaseApk" BlackBox/Bcore/src/main/java/top/niunaijun/blackbox/core/system/pm/BPackageManagerService.java
           grep -F "Private split copy complete" BlackBox/Bcore/src/main/java/top/niunaijun/blackbox/core/system/pm/installer/CopyExecutor.java
           grep -F "getSplitApkDir" BlackBox/Bcore/src/main/java/top/niunaijun/blackbox/core/env/BEnvironment.java
+          test "$(grep -c 'android:excludeFromRecents="true"' BlackBox/Bcore/src/main/AndroidManifest.xml)" -ge 100
+          grep -F "Cluster parsed package=" BlackBox/Bcore/src/main/java/top/niunaijun/blackbox/core/system/pm/BPackageManagerService.java
 
       - name: Build guest, host, and device-test APKs
         run: ./gradlew :AihamVirtualTest:assembleDebug :app:assembleDebug :app:assembleDebugAndroidTest --stacktrace

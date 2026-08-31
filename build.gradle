@@ -40,7 +40,7 @@ ext {
 }
 
 
-def blackBoxOverlayDir = file("blackbox-overrides/Bcore/src/main/java")
+def blackBoxOverlayDir = file("blackbox-overrides/Bcore")
 
 tasks.register("applyBlackBoxOverlay") {
     inputs.dir(blackBoxOverlayDir)
@@ -52,7 +52,7 @@ tasks.register("applyBlackBoxOverlay") {
         }
         copy {
             from blackBoxOverlayDir
-            into file("BlackBox/Bcore/src/main/java")
+            into file("BlackBox/Bcore")
         }
     }
 }

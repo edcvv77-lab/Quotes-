@@ -735,19 +735,33 @@ public class BPackageManagerService extends IBPackageManagerService.Stub impleme
                 );
             }
 
-            PackageParser.Package aPackage = parserApk(apkFile.getAbsolutePath());
+            File parserSource = installSource.isDirectory() ? installSource : apkFile;
+            PackageParser.Package aPackage = parserApk(parserSource.getAbsolutePath());
             if (aPackage == null) {
-                return result.installError("parser apk error.");
+                return result.installError("parser apk/cluster error.");
             }
             result.packageName = aPackage.packageName;
 
             if (!splitApks.isEmpty()) {
-                String[] splitPaths = new String[splitApks.size()];
-                for (int i = 0; i < splitApks.size(); i++) {
-                    splitPaths[i] = splitApks.get(i).getAbsolutePath();
+                String[] parsedSplits = aPackage.applicationInfo.splitSourceDirs;
+                if (parsedSplits == null || parsedSplits.length != splitApks.size()) {
+                    // Fallback for OEM PackageParser variants that parse the base but omit
+                    // split paths. Standard Android 11 should normally populate these.
+                    String[] splitPaths = new String[splitApks.size()];
+                    for (int i = 0; i < splitApks.size(); i++) {
+                        splitPaths[i] = splitApks.get(i).getAbsolutePath();
+                    }
+                    aPackage.applicationInfo.splitSourceDirs = splitPaths;
+                    aPackage.applicationInfo.splitPublicSourceDirs = splitPaths;
                 }
-                aPackage.applicationInfo.splitSourceDirs = splitPaths;
-                aPackage.applicationInfo.splitPublicSourceDirs = splitPaths;
+                Slog.i(
+                        TAG,
+                        "Cluster parsed package=" + aPackage.packageName
+                                + " splitCount="
+                                + (aPackage.applicationInfo.splitSourceDirs == null
+                                        ? 0
+                                        : aPackage.applicationInfo.splitSourceDirs.length)
+                );
             }
 
             if (option.isFlag(InstallOption.FLAG_SYSTEM)) {
