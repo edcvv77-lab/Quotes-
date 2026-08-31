@@ -1,0 +1,55 @@
+<resources>
+    <style name="Widget.Aiham.PrimaryButton" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/quotes_primary</item>
+        <item name="cornerRadius">18dp</item>
+        <item name="android:minHeight">54dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">15sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/quotes_white</item>
+        <item name="iconTint">@color/quotes_white</item>
+        <item name="iconPadding">10dp</item>
+        <item name="rippleColor">@color/quotes_primary_soft</item>
+    </style>
+
+    <style name="Widget.Aiham.SecondaryButton" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="backgroundTint">@color/quotes_surface</item>
+        <item name="strokeColor">@color/quotes_border</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="cornerRadius">18dp</item>
+        <item name="android:minHeight">54dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/quotes_primary</item>
+        <item name="iconTint">@color/quotes_primary</item>
+        <item name="iconPadding">9dp</item>
+    </style>
+
+    <style name="Widget.Aiham.PrivatePrimaryButton" parent="Widget.MaterialComponents.Button">
+        <item name="backgroundTint">@color/private_primary</item>
+        <item name="cornerRadius">20dp</item>
+        <item name="android:minHeight">58dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">16sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/private_text</item>
+        <item name="iconTint">@color/private_text</item>
+        <item name="iconPadding">11dp</item>
+        <item name="rippleColor">@color/private_primary_bright</item>
+    </style>
+
+    <style name="Widget.Aiham.PrivateSecondaryButton" parent="Widget.MaterialComponents.Button.OutlinedButton">
+        <item name="backgroundTint">@color/private_surface</item>
+        <item name="strokeColor">@color/private_border</item>
+        <item name="strokeWidth">1dp</item>
+        <item name="cornerRadius">18dp</item>
+        <item name="android:minHeight">54dp</item>
+        <item name="android:textAllCaps">false</item>
+        <item name="android:textSize">14sp</item>
+        <item name="android:textStyle">bold</item>
+        <item name="android:textColor">@color/private_text</item>
+        <item name="iconTint">@color/private_primary_bright</item>
+        <item name="iconPadding">9dp</item>
+    </style>
+</resources>
