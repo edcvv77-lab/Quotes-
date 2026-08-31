@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:background="#0F172A"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="start"
+        android:text="اختر تطبيقًا لنسخه"
+        android:textColor="#F8FAFC"
+        android:textSize="22sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:text="ابحث بالاسم ثم اضغط على التطبيق"
+        android:textColor="#94A3B8"
+        android:textSize="13sp" />
+
+    <EditText
+        android:id="@+id/etInstalledAppSearch"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:layout_marginTop="14dp"
+        android:background="@drawable/bg_secure_app_tile"
+        android:drawableStart="@android:drawable/ic_menu_search"
+        android:drawablePadding="10dp"
+        android:hint="بحث عن تطبيق..."
+        android:imeOptions="actionDone"
+        android:inputType="text"
+        android:maxLines="1"
+        android:paddingStart="14dp"
+        android:paddingEnd="14dp"
+        android:textColor="#F8FAFC"
+        android:textColorHint="#64748B"
+        android:textSize="15sp" />
+
+    <TextView
+        android:id="@+id/tvInstalledAppCount"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="10dp"
+        android:textColor="#94A3B8"
+        android:textSize="12sp" />
+
+    <ListView
+        android:id="@+id/listInstalledApps"
+        android:layout_width="match_parent"
+        android:layout_height="420dp"
+        android:layout_marginTop="6dp"
+        android:clipToPadding="false"
+        android:divider="#263246"
+        android:dividerHeight="1dp"
+        android:paddingBottom="6dp"
+        android:scrollbars="vertical" />
+
+    <TextView
+        android:id="@+id/tvInstalledAppEmpty"
+        android:layout_width="match_parent"
+        android:layout_height="120dp"
+        android:gravity="center"
+        android:text="لا توجد تطبيقات مطابقة للبحث."
+        android:textColor="#94A3B8"
+        android:textSize="14sp"
+        android:visibility="gone" />
+</LinearLayout>
