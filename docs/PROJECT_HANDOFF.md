@@ -10,13 +10,13 @@ Active development branch:
 `ui/pro-architecture-redesign`
 
 Latest code/config commit verified by CI:
-`ac455e76029c77957609a52f9d0c41e2b82c7153`
+`088a8a2ad197375b255118e72499bf3c3505bbaa`
 
 Latest verified GitHub Actions run:
 - workflow: **Build Aiham Private Space**
-- run: **#263**
+- run: **#268**
 - result: **SUCCESS**
-- source commit: `ac455e76029c77957609a52f9d0c41e2b82c7153`
+- source commit: `088a8a2ad197375b255118e72499bf3c3505bbaa`
 
 The build verified:
 - real JVM unit tests;
@@ -127,6 +127,30 @@ Implemented after the first professional redesign:
 - Final manifest metadata and forbidden permission checks still pass.
 - No targetSdk/minSdk/package/engine behavior was changed by the redesign.
 
+## Real Android 11 failure observed
+
+On 2026-08-31 the target Android 11 tablet successfully:
+- opened Quotes;
+- entered the Hadeel private space;
+- displayed a cloned WhatsApp guest tile.
+
+Failure:
+- tapping the WhatsApp guest tile did **not** surface WhatsApp;
+- Android displayed **"Quotes stopped working"**;
+- the private-space status had already reported the guest launch as opened.
+
+Interpretation:
+- Android 11 installation/enumeration/private-space UI are working far enough to reach guest launch;
+- runtime acceptance currently fails during guest-process startup/initial application binding;
+- because BlackBox guest processes run under the Quotes host package, Android can label a guest-process crash as a Quotes crash;
+- do not treat the current Android 11 runtime as accepted.
+
+A built-in Java crash recorder was added at commit `088a8a2ad197375b255118e72499bf3c3505bbaa`:
+- it registers through BlackBoxCore's exception handler in every process;
+- it records device/SDK/process/guest package/launch target and Java stack trace;
+- after a recorded crash the private space exposes a one-tap **مشاركة تقرير التعطل السابق** action;
+- the next tablet reproduction should use this report instead of asking the remote user to collect Logcat manually.
+
 ## What is NOT yet proven
 
 Do not claim any of the following as complete:
@@ -160,7 +184,7 @@ If launch fails, capture the exact screen and Logcat where available. Do not ret
 
 ## Current known technical debt
 
-1. Android 11 physical runtime acceptance is still open.
+1. Android 11 physical runtime acceptance is failing at guest launch; WhatsApp triggers a host-labeled process crash on the target tablet.
 2. WhatsApp acceptance is still open.
 3. Android 14 guest UI surfacing is unreliable and is not the primary target.
 4. `MainActivity` still owns too many responsibilities; defer major refactor until Android 11 runtime is accepted.
@@ -174,7 +198,7 @@ If launch fails, capture the exact screen and Logcat where available. Do not ret
 Do **not** redesign the engine or change Android API levels next.
 
 Next action:
-**run a visual + functional acceptance pass on the target Android 11 tablet using the new UI build, then record the result here.**
+**install the crash-diagnostic build on the Android 11 tablet, reproduce the WhatsApp launch crash once, reopen the private space, and use `مشاركة تقرير التعطل السابق` to obtain the exact Java stack trace. Fix the root cause from that report before any further UI or engine changes.**
 
 If the UI is visually accepted but guest launch fails, return to runtime diagnosis only. If the UI clips or scales poorly, adjust the `sw600dp` layouts without touching BlackBox.
 
