@@ -385,7 +385,7 @@ class MainActivity : AppCompatActivity() {
                                 append("\n")
                                 append(app.packageName)
                                 if (app.usesSplitApks) {
-                                    append("  •  Split APK")
+                                    append("  •  غير قابل للنسخ حاليًا")
                                 }
                             }
                         }.toTypedArray()
@@ -422,16 +422,17 @@ class MainActivity : AppCompatActivity() {
         )
 
         AlertDialog.Builder(this)
-            .setTitle("هذا التطبيق يستخدم Split APK")
+            .setTitle("لا يمكن نسخ هذا التطبيق بهذه النسخة")
             .setMessage(
-                app.label + " يعتمد على " + app.splitApkPaths.size +
-                    " جزء إضافي إلى جانب base.apk. إصدار BlackBox الحالي لا يحمّل هذه الأجزاء " +
-                    "بشكل صحيح، لذلك تم إيقاف النسخ بدل تثبيت نسخة ناقصة."
+                app.label + " مثبت على الجهاز على عدة أجزاء. لا تدخل الإعدادات، ولا تستخرج base.apk، " +
+                    "ولا تحتاج منح كل الصلاحيات يدويًا. المحرك الحالي لا يستطيع جمع هذه الأجزاء بعد، " +
+                    "لذلك أوقفت النسخ حتى لا يظهر لك تطبيق ناقص أو لا يعمل."
             )
             .setPositiveButton("حسنًا", null)
             .show()
 
-        tvPrivateStatus.text = "تعذر نسخ " + app.label + " بأمان لأنه يستخدم Split APK."
+        tvPrivateStatus.text =
+            app.label + " يحتاج دعم التطبيقات متعددة الأجزاء قبل نسخه إلى المساحة."
     }
 
     private fun cloneInstalledApp(app: InstalledAppCandidate) {
